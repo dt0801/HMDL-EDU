@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,md}\"",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
