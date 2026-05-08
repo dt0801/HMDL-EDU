@@ -49,6 +49,7 @@ export function NewExamForm({
   const saveQuestion = useSaveQuestion();
   const [courseId, setCourseId] = useState<string>(defaultCourseId ?? courses[0]?.id ?? "");
 
+  const [step, setStep] = useState<"info" | "questions" | "settings">("info");
   const [contentMode, setContentMode] = useState<"manual" | "upload" | "bank">(
     defaultMode === "upload" ? "upload" : "manual"
   );
@@ -94,6 +95,10 @@ export function NewExamForm({
     return activeQuestions.filter((q) => questionSchema.safeParse(q).success);
   }, [activeQuestions]);
   const hasValidQuestions = validQuestions.length > 0;
+
+  const validDraftCount = useMemo(() => {
+    return draftQuestions.filter((q) => questionSchema.safeParse(q).success).length;
+  }, [draftQuestions]);
 
   const primarySubmitLabel = useMemo(() => {
     if (!hasValidQuestions) return "Lưu nháp";
@@ -268,370 +273,422 @@ export function NewExamForm({
         </Button>
       ) : null}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 pb-24" noValidate>
         <Card>
-          <CardHeader>
-            <CardTitle>Thông tin đề thi</CardTitle>
-            <CardDescription>Thiết lập thông tin chung cho đề thi.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Khóa học *</Label>
-              <Select value={courseId} onValueChange={setCourseId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn khóa học" />
-                </SelectTrigger>
-                <SelectContent>
-                  {courses.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="title">Tên đề thi *</Label>
-              <Input id="title" {...register("title")} />
-              {errors.title ? <p className="text-sm text-destructive">{errors.title.message}</p> : null}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Mô tả</Label>
-              <Textarea id="description" rows={3} {...register("description")} />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="duration_minutes">Thời gian làm bài (phút) *</Label>
-                <Input
-                  id="duration_minutes"
-                  type="number"
-                  {...register("duration_minutes", { valueAsNumber: true })}
-                />
-                {errors.duration_minutes ? (
-                  <p className="text-sm text-destructive">{errors.duration_minutes.message}</p>
-                ) : null}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="passing_score">Điểm đạt (%) *</Label>
-                <Input
-                  id="passing_score"
-                  type="number"
-                  {...register("passing_score", { valueAsNumber: true })}
-                />
-                {errors.passing_score ? (
-                  <p className="text-sm text-destructive">{errors.passing_score.message}</p>
-                ) : null}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="max_attempts">Số lần thi tối đa *</Label>
-                <Input id="max_attempts" type="number" {...register("max_attempts", { valueAsNumber: true })} />
-                {errors.max_attempts ? (
-                  <p className="text-sm text-destructive">{errors.max_attempts.message}</p>
-                ) : null}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Nội dung câu hỏi</CardTitle>
-            <CardDescription>Chọn cách thêm câu hỏi cho đề thi.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Tabs value={contentMode} onValueChange={(v) => setContentMode(v as typeof contentMode)}>
-              <TabsList>
-                <TabsTrigger value="manual">Nhập thủ công</TabsTrigger>
-                <TabsTrigger value="upload">Upload từ file</TabsTrigger>
-                <TabsTrigger value="bank">Dùng ngân hàng câu hỏi</TabsTrigger>
+          <CardHeader className="space-y-2">
+            <CardTitle>Tạo đề thi</CardTitle>
+            <CardDescription>
+              Làm theo 3 bước: Thông tin → Câu hỏi → Cài đặt. Bạn có thể lưu nháp bất kỳ lúc nào.
+            </CardDescription>
+            <Tabs value={step} onValueChange={(v) => setStep(v as typeof step)}>
+              <TabsList className="w-full justify-start">
+                <TabsTrigger value="info">1. Thông tin</TabsTrigger>
+                <TabsTrigger value="questions">2. Câu hỏi</TabsTrigger>
+                <TabsTrigger value="settings">3. Cài đặt</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="manual" className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    Có {draftQuestions.length} câu hỏi (hợp lệ:{" "}
-                    {draftQuestions.filter((q) => questionSchema.safeParse(q).success).length}).
-                  </p>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => {
-                      setEditingIdx(null);
-                      setEditorOpen(true);
-                    }}
-                  >
-                    <Plus className="mr-1 h-4 w-4" /> Thêm câu hỏi
-                  </Button>
-                </div>
-
-                {draftQuestions.length === 0 ? (
-                  <EmptyState
-                    title="Chưa có câu hỏi nào"
-                    description="Hãy thêm câu hỏi đầu tiên hoặc chuyển sang tab Upload từ file."
-                    action={
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          setEditingIdx(null);
-                          setEditorOpen(true);
-                        }}
-                      >
-                        <Plus className="mr-1 h-4 w-4" /> Thêm câu hỏi
-                      </Button>
-                    }
-                  />
-                ) : (
+              <TabsContent value="info" className="mt-4">
+                <div className="space-y-4">
                   <div className="space-y-2">
-                    {draftQuestions.map((q, idx) => {
-                      const ok = questionSchema.safeParse(q).success;
-                      return (
-                        <div
-                          key={idx}
-                          className="flex items-start justify-between gap-3 rounded-lg border bg-card p-3"
-                        >
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {idx + 1}. {q.content || "(Chưa có nội dung)"}
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {ok ? "Hợp lệ" : "Chưa hợp lệ"} • {q.type} • {q.points} điểm
-                            </p>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-1">
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => {
-                                setEditingIdx(idx);
-                                setEditorOpen(true);
-                              }}
-                              aria-label="Sửa"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => setDraftQuestions((prev) => prev.filter((_, i) => i !== idx))}
-                              aria-label="Xóa"
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    <Label>Khóa học *</Label>
+                    <Select value={courseId} onValueChange={setCourseId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn khóa học" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courses.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
-              </TabsContent>
 
-              <TabsContent value="upload" className="space-y-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="text-sm text-muted-foreground">
-                    Hỗ trợ .xlsx, .csv. Mỗi câu hỏi cần có nội dung, các đáp án, đáp án đúng và điểm.
-                  </div>
-                  <Button type="button" variant="outline" size="sm" onClick={downloadSample}>
-                    <Download className="mr-1 h-4 w-4" /> Tải file mẫu
-                  </Button>
-                </div>
-
-                <div className="rounded-lg border border-dashed bg-card p-4">
-                  <div className="flex flex-col items-center justify-center gap-2 text-center">
-                    <FileUp className="h-6 w-6 text-muted-foreground" />
-                    <p className="text-sm font-medium">Kéo thả file vào đây hoặc chọn file để upload</p>
-                    <p className="text-xs text-muted-foreground">
-                      Nếu backend parse chưa sẵn sàng, hệ thống sẽ hiển thị preview/validation ngay tại đây.
-                    </p>
-                    <input
-                      ref={uploadInputRef}
-                      type="file"
-                      accept=".csv,.xlsx"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (!f) return;
-                        void handlePickFile(f);
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => uploadInputRef.current?.click()}
-                    >
-                      Chọn file
-                    </Button>
-                    {uploadFile ? (
-                      <p className="text-xs text-muted-foreground">
-                        Đã chọn: <span className="font-medium">{uploadFile.name}</span>
-                      </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Tên đề thi *</Label>
+                    <Input id="title" {...register("title")} />
+                    {errors.title ? (
+                      <p className="text-sm text-destructive">{errors.title.message}</p>
                     ) : null}
                   </div>
-                </div>
 
-                {uploadLineErrors.length > 0 ? (
-                  <div className="rounded-lg border bg-card p-3">
-                    <p className="text-sm font-medium text-destructive">Có lỗi trong file</p>
-                    <ul className="mt-2 space-y-1 text-sm text-destructive">
-                      {uploadLineErrors.slice(0, 8).map((e, idx) => (
-                        <li key={idx}>{e}</li>
-                      ))}
-                    </ul>
-                    {uploadLineErrors.length > 8 ? (
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Và {uploadLineErrors.length - 8} lỗi khác…
-                      </p>
-                    ) : null}
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Mô tả</Label>
+                    <Textarea id="description" rows={3} {...register("description")} />
                   </div>
-                ) : null}
 
-                <div className="rounded-lg border bg-card p-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">Preview câu hỏi</p>
-                    <p className="text-sm text-muted-foreground">
-                      {uploadQuestions.length} câu hỏi hợp lệ
-                    </p>
-                  </div>
-                  {uploadQuestions.length === 0 ? (
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Chưa có dữ liệu để preview. Hãy upload file theo mẫu.
-                    </p>
-                  ) : (
-                    <div className="mt-2 space-y-2">
-                      {uploadQuestions.slice(0, 10).map((q, idx) => (
-                        <div key={idx} className="rounded-md border p-2">
-                          <p className="text-sm font-medium truncate">
-                            {idx + 1}. {q.content}
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {q.type} • {q.points} điểm • {q.answers.filter((a) => a.is_correct).length} đáp án đúng
-                          </p>
-                        </div>
-                      ))}
-                      {uploadQuestions.length > 10 ? (
-                        <p className="text-xs text-muted-foreground">
-                          Và {uploadQuestions.length - 10} câu hỏi khác…
-                        </p>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="duration_minutes">Thời gian (phút) *</Label>
+                      <Input
+                        id="duration_minutes"
+                        type="number"
+                        {...register("duration_minutes", { valueAsNumber: true })}
+                      />
+                      {errors.duration_minutes ? (
+                        <p className="text-sm text-destructive">{errors.duration_minutes.message}</p>
                       ) : null}
                     </div>
-                  )}
+                    <div className="space-y-2">
+                      <Label htmlFor="passing_score">Điểm đạt (%) *</Label>
+                      <Input
+                        id="passing_score"
+                        type="number"
+                        {...register("passing_score", { valueAsNumber: true })}
+                      />
+                      {errors.passing_score ? (
+                        <p className="text-sm text-destructive">{errors.passing_score.message}</p>
+                      ) : null}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="max_attempts">Số lần thi tối đa *</Label>
+                      <Input
+                        id="max_attempts"
+                        type="number"
+                        {...register("max_attempts", { valueAsNumber: true })}
+                      />
+                      {errors.max_attempts ? (
+                        <p className="text-sm text-destructive">{errors.max_attempts.message}</p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button type="button" onClick={() => setStep("questions")}>
+                      Tiếp tục
+                    </Button>
+                  </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="bank" className="space-y-2">
-                <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-                  Tính năng ngân hàng câu hỏi đang được phát triển.
+              <TabsContent value="questions" className="mt-4">
+                <div className="space-y-4">
+                  <Tabs
+                    value={contentMode}
+                    onValueChange={(v) => setContentMode(v as typeof contentMode)}
+                  >
+                    <TabsList>
+                      <TabsTrigger value="manual">Nhập thủ công</TabsTrigger>
+                      <TabsTrigger value="upload">Upload từ file</TabsTrigger>
+                      <TabsTrigger value="bank">Ngân hàng</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="manual" className="space-y-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-sm text-muted-foreground">
+                          Tổng: {draftQuestions.length} • Hợp lệ: {validDraftCount}
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => {
+                            setEditingIdx(null);
+                            setEditorOpen(true);
+                          }}
+                        >
+                          <Plus className="mr-1 h-4 w-4" /> Thêm câu hỏi
+                        </Button>
+                      </div>
+
+                      {draftQuestions.length === 0 ? (
+                        <EmptyState
+                          title="Chưa có câu hỏi nào"
+                          description="Thêm câu hỏi đầu tiên hoặc chuyển sang Upload từ file."
+                          action={
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                setEditingIdx(null);
+                                setEditorOpen(true);
+                              }}
+                            >
+                              <Plus className="mr-1 h-4 w-4" /> Thêm câu hỏi
+                            </Button>
+                          }
+                        />
+                      ) : (
+                        <div className="space-y-2">
+                          {draftQuestions.map((q, idx) => {
+                            const ok = questionSchema.safeParse(q).success;
+                            return (
+                              <div
+                                key={idx}
+                                className="flex items-start justify-between gap-3 rounded-lg border bg-card p-3"
+                              >
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">
+                                    {idx + 1}. {q.content || "(Chưa có nội dung)"}
+                                  </p>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    {ok ? "Hợp lệ" : "Chưa hợp lệ"} • {q.points} điểm
+                                  </p>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-1">
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setEditingIdx(idx);
+                                      setEditorOpen(true);
+                                    }}
+                                    aria-label="Sửa"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      setDraftQuestions((prev) => prev.filter((_, i) => i !== idx))
+                                    }
+                                    aria-label="Xóa"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="upload" className="space-y-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="text-sm text-muted-foreground">
+                          Hỗ trợ <span className="font-medium">.xlsx, .csv</span>. Mỗi câu hỏi cần nội dung,
+                          đáp án, đáp án đúng và điểm.
+                        </div>
+                        <Button type="button" variant="outline" size="sm" onClick={downloadSample}>
+                          <Download className="mr-1 h-4 w-4" /> Tải file mẫu
+                        </Button>
+                      </div>
+
+                      <div className="rounded-lg border border-dashed bg-card p-4">
+                        <div className="flex flex-col items-center justify-center gap-2 text-center">
+                          <FileUp className="h-6 w-6 text-muted-foreground" />
+                          <p className="text-sm font-medium">Chọn file để upload</p>
+                          <p className="text-xs text-muted-foreground">
+                            Preview/validation hiển thị tại đây. Upload/parse backend sẽ được nối sau.
+                          </p>
+                          <input
+                            ref={uploadInputRef}
+                            type="file"
+                            accept=".csv,.xlsx"
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (!f) return;
+                              void handlePickFile(f);
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => uploadInputRef.current?.click()}
+                          >
+                            Chọn file
+                          </Button>
+                          {uploadFile ? (
+                            <p className="text-xs text-muted-foreground">
+                              Đã chọn: <span className="font-medium">{uploadFile.name}</span>
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      {uploadLineErrors.length > 0 ? (
+                        <div className="rounded-lg border bg-card p-3">
+                          <p className="text-sm font-medium text-destructive">Có lỗi trong file</p>
+                          <ul className="mt-2 space-y-1 text-sm text-destructive">
+                            {uploadLineErrors.slice(0, 8).map((e, idx) => (
+                              <li key={idx}>{e}</li>
+                            ))}
+                          </ul>
+                          {uploadLineErrors.length > 8 ? (
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              Và {uploadLineErrors.length - 8} lỗi khác…
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      <div className="rounded-lg border bg-card p-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium">Preview</p>
+                          <p className="text-sm text-muted-foreground">{uploadQuestions.length} câu hỏi hợp lệ</p>
+                        </div>
+                        {uploadQuestions.length === 0 ? (
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            Upload file theo mẫu để xem preview.
+                          </p>
+                        ) : (
+                          <div className="mt-2 space-y-2">
+                            {uploadQuestions.slice(0, 8).map((q, idx) => (
+                              <div key={idx} className="rounded-md border p-2">
+                                <p className="text-sm font-medium truncate">
+                                  {idx + 1}. {q.content}
+                                </p>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {q.points} điểm • {q.answers.filter((a) => a.is_correct).length} đáp án đúng
+                                </p>
+                              </div>
+                            ))}
+                            {uploadQuestions.length > 8 ? (
+                              <p className="text-xs text-muted-foreground">
+                                Và {uploadQuestions.length - 8} câu hỏi khác…
+                              </p>
+                            ) : null}
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="bank" className="space-y-2">
+                      <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
+                        Tính năng ngân hàng câu hỏi đang được phát triển.
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+
+                  <div className="flex items-center justify-between">
+                    <Button type="button" variant="outline" onClick={() => setStep("info")}>
+                      Quay lại
+                    </Button>
+                    <Button type="button" onClick={() => setStep("settings")}>
+                      Tiếp tục
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="settings" className="mt-4">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="flex items-start gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4 accent-primary"
+                        checked={isPublished}
+                        disabled={!hasValidQuestions}
+                        onChange={(e) =>
+                          setValue("is_published", e.target.checked, { shouldValidate: true })
+                        }
+                      />
+                      <div>
+                        <div className="font-medium">Xuất bản đề thi</div>
+                        <div className="text-muted-foreground">
+                          Học viên chỉ thấy đề thi sau khi đề được xuất bản.
+                          {!hasValidQuestions ? " (Cần có câu hỏi hợp lệ để xuất bản.)" : null}
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-primary"
+                        checked={displaySettings.shuffle_questions}
+                        onChange={(e) =>
+                          setDisplaySettings((s) => ({ ...s, shuffle_questions: e.target.checked }))
+                        }
+                      />
+                      Trộn câu hỏi
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-primary"
+                        checked={displaySettings.shuffle_answers}
+                        onChange={(e) =>
+                          setDisplaySettings((s) => ({ ...s, shuffle_answers: e.target.checked }))
+                        }
+                      />
+                      Trộn đáp án
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-primary"
+                        checked={displaySettings.show_score_after_submit}
+                        onChange={(e) =>
+                          setDisplaySettings((s) => ({
+                            ...s,
+                            show_score_after_submit: e.target.checked,
+                          }))
+                        }
+                      />
+                      Hiển thị điểm sau khi nộp
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-primary"
+                        checked={displaySettings.show_correct_answers_after_finish}
+                        onChange={(e) =>
+                          setDisplaySettings((s) => ({
+                            ...s,
+                            show_correct_answers_after_finish: e.target.checked,
+                          }))
+                        }
+                      />
+                      Cho xem đáp án đúng sau khi hoàn thành
+                    </label>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    TODO: Lưu các cài đặt hiển thị vào backend khi schema sẵn sàng.
+                  </p>
+
+                  <div className="flex justify-start">
+                    <Button type="button" variant="outline" onClick={() => setStep("questions")}>
+                      Quay lại
+                    </Button>
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Cài đặt hiển thị</CardTitle>
-            <CardDescription>Thiết lập cách hiển thị đề thi cho học viên.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-2">
-              <label className="flex items-start gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4 accent-primary"
-                  checked={isPublished}
-                  disabled={!hasValidQuestions}
-                  onChange={(e) =>
-                    setValue("is_published", e.target.checked, { shouldValidate: true })
-                  }
-                />
+
+          <CardContent className="pt-0">
+            <div className="rounded-lg border bg-card p-3 text-sm text-muted-foreground">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="font-medium">Xuất bản đề thi</div>
-                  <div className="text-muted-foreground">
-                    Học viên chỉ thấy đề thi sau khi đề được xuất bản.
-                    {!hasValidQuestions ? " (Cần có câu hỏi hợp lệ để xuất bản.)" : null}
-                  </div>
+                  <span className="font-medium text-foreground">Trạng thái:</span>{" "}
+                  {hasValidQuestions ? "Sẵn sàng lưu" : "Chưa có câu hỏi hợp lệ"}
                 </div>
-              </label>
+                <div>
+                  <span className="font-medium text-foreground">Câu hỏi hợp lệ:</span>{" "}
+                  {validQuestions.length}
+                </div>
+              </div>
             </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-primary"
-                  checked={displaySettings.shuffle_questions}
-                  onChange={(e) =>
-                    setDisplaySettings((s) => ({ ...s, shuffle_questions: e.target.checked }))
-                  }
-                />
-                Trộn câu hỏi
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-primary"
-                  checked={displaySettings.shuffle_answers}
-                  onChange={(e) =>
-                    setDisplaySettings((s) => ({ ...s, shuffle_answers: e.target.checked }))
-                  }
-                />
-                Trộn đáp án
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-primary"
-                  checked={displaySettings.show_score_after_submit}
-                  onChange={(e) =>
-                    setDisplaySettings((s) => ({
-                      ...s,
-                      show_score_after_submit: e.target.checked,
-                    }))
-                  }
-                />
-                Hiển thị điểm sau khi nộp
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-primary"
-                  checked={displaySettings.show_correct_answers_after_finish}
-                  onChange={(e) =>
-                    setDisplaySettings((s) => ({
-                      ...s,
-                      show_correct_answers_after_finish: e.target.checked,
-                    }))
-                  }
-                />
-                Cho xem đáp án đúng sau khi hoàn thành
-              </label>
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              TODO: Lưu các cài đặt hiển thị vào backend khi schema sẵn sàng.
-            </p>
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            {hasValidQuestions
-              ? `Sẵn sàng lưu với ${validQuestions.length} câu hỏi hợp lệ.`
-              : "Bạn chưa có câu hỏi hợp lệ. Bạn có thể lưu nháp để bổ sung sau."}
-          </p>
-          <Button
-            type="submit"
-            disabled={createExam.isPending || saveQuestion.isPending}
-          >
-            {createExam.isPending || saveQuestion.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : null}
-            {primarySubmitLabel}
-          </Button>
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/80 backdrop-blur">
+          <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-muted-foreground">
+              {hasValidQuestions ? (
+                <span>
+                  Đã có <span className="font-medium text-foreground">{validQuestions.length}</span> câu hỏi hợp lệ.
+                </span>
+              ) : (
+                <span>Chưa có câu hỏi hợp lệ. Bạn có thể lưu nháp để bổ sung sau.</span>
+              )}
+            </div>
+            <Button type="submit" disabled={createExam.isPending || saveQuestion.isPending}>
+              {createExam.isPending || saveQuestion.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              {primarySubmitLabel}
+            </Button>
+          </div>
         </div>
 
         <QuestionEditor
