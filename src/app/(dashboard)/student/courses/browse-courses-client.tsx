@@ -1,14 +1,16 @@
 "use client";
 
-import { BookOpen, Search } from "lucide-react";
+import { BookOpen, GraduationCap, ListChecks, Search } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { CourseCard } from "@/components/courses/course-card";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -98,21 +100,54 @@ export function BrowseCoursesClient({ studentId }: { studentId: string }) {
           {filtered.map((c) => {
             const isEnrolled = enrolledIds.has(c.id);
             return (
-              <CourseCard
-                key={c.id}
-                course={c}
-                href={isEnrolled ? `/student/courses/${c.id}/learn` : "#"}
-                footer={
-                  isEnrolled ? (
-                    <Button size="sm" variant="outline" className="w-full" asChild>
-                      <Link href={`/student/courses/${c.id}/learn`}>Tiếp tục học</Link>
-                    </Button>
-                  ) : (
+              <Card key={c.id} className="group overflow-hidden transition-shadow hover:shadow-md">
+                <Link
+                  href={isEnrolled ? `/student/courses/${c.id}/learn` : "/student/courses"}
+                  className="block"
+                >
+                  <div className="relative aspect-video bg-muted">
+                    {c.thumbnail_url ? (
+                      <Image
+                        src={c.thumbnail_url}
+                        alt={c.title}
+                        fill
+                        className="object-cover transition-transform group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/10 to-sky-100" />
+                    )}
+                    <div className="absolute left-2 top-2 flex flex-wrap gap-1">
+                      {c.category ? <Badge variant="secondary">{c.category}</Badge> : null}
+                    </div>
+                  </div>
+                </Link>
+
+                <CardContent className="p-4">
+                  <div className="min-w-0">
+                    <h3 className="line-clamp-2 font-semibold">{c.title}</h3>
+                    <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="h-4 w-4" />
+                        <span className="truncate">
+                          {c.instructor?.full_name ?? "Giảng viên"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <ListChecks className="h-4 w-4" />
+                        <span>{c.lessons_count ?? 0} bài học</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3">
                     <Button
                       size="sm"
                       className="w-full"
-                      disabled={enroll.isPending}
-                      onClick={() =>
+                      variant={isEnrolled ? "outline" : "default"}
+                      disabled={isEnrolled || enroll.isPending}
+                      onClick={() => {
+                        if (isEnrolled) return;
                         enroll.mutate(
                           { studentId, courseId: c.id },
                           {
@@ -120,14 +155,25 @@ export function BrowseCoursesClient({ studentId }: { studentId: string }) {
                             onError: (e) =>
                               toast.error(e instanceof Error ? e.message : "Có lỗi xảy ra"),
                           }
-                        )
-                      }
+                        );
+                      }}
                     >
-                      Đăng ký học
+                      {isEnrolled ? "Đã đăng ký" : "Đăng ký"}
                     </Button>
-                  )
-                }
-              />
+
+                    {isEnrolled ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="mt-2 w-full"
+                        asChild
+                      >
+                        <Link href={`/student/courses/${c.id}/learn`}>Vào học</Link>
+                      </Button>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
             );
           })}
         </div>

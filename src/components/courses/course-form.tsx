@@ -2,7 +2,10 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +23,7 @@ import {
   courseSchema,
   type CourseInput,
 } from "@/lib/validations/course.schema";
+import { createClient } from "@/lib/supabase/client";
 
 export function CourseForm({
   defaultValues,
@@ -32,6 +36,10 @@ export function CourseForm({
   isSubmitting?: boolean;
   submitLabel?: string;
 }) {
+  const supabase = useMemo(() => createClient(), []);
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -53,9 +61,61 @@ export function CourseForm({
   const category = watch("category");
   const isPublished = watch("is_published");
   const requiresEnrollment = watch("requires_enrollment");
+  const thumbnailUrl = watch("thumbnail_url");
+  const previewSrc = thumbnailPreview ?? (thumbnailUrl ? thumbnailUrl : null);
+
+  useEffect(() => {
+    setThumbnailPreview(null);
+  }, [thumbnailUrl]);
+
+  const uploadThumbnail = async (file: File) => {
+    setThumbnailUploading(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+      const safeExt = ext.match(/^[a-z0-9]+$/) ? ext : "png";
+      const key =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const path = `courses/${key}.${safeExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("course-thumbnails")
+        .upload(path, file, { upsert: true, contentType: file.type || undefined });
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("course-thumbnails").getPublicUrl(path);
+      if (!data.publicUrl) throw new Error("Không lấy được public URL của thumbnail");
+
+      setValue("thumbnail_url", data.publicUrl, { shouldValidate: true, shouldDirty: true });
+      toast.success("Đã tải thumbnail lên");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload thumbnail thất bại");
+      throw e;
+    } finally {
+      setThumbnailUploading(false);
+    }
+  };
+
+  const onPickThumbnail: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setThumbnailPreview(URL.createObjectURL(file));
+    try {
+      await uploadThumbnail(file);
+    } finally {
+      // allow re-pick same file
+      e.target.value = "";
+    }
+  };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-4"
+      noValidate
+      aria-busy={isSubmitting || thumbnailUploading}
+    >
       <div className="space-y-2">
         <Label htmlFor="title">Tên khóa học *</Label>
         <Input id="title" {...register("title")} />
@@ -93,11 +153,32 @@ export function CourseForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="thumbnail_url">URL ảnh đại diện</Label>
-          <Input id="thumbnail_url" placeholder="https://..." {...register("thumbnail_url")} />
+          <Label htmlFor="thumbnail_file">Thumbnail *</Label>
+          <Input
+            id="thumbnail_file"
+            type="file"
+            accept="image/*"
+            onChange={onPickThumbnail}
+            disabled={thumbnailUploading}
+          />
+          <Input type="hidden" {...register("thumbnail_url")} />
           {errors.thumbnail_url ? (
             <p className="text-sm text-destructive">{errors.thumbnail_url.message}</p>
           ) : null}
+          {previewSrc ? (
+            <div className="relative mt-2 aspect-video overflow-hidden rounded-lg border bg-muted">
+              <Image
+                src={previewSrc}
+                alt="Thumbnail preview"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
+          ) : null}
+          <p className="text-xs text-muted-foreground">
+            Ảnh sẽ được upload lên Supabase Storage bucket <span className="font-medium">course-thumbnails</span>.
+          </p>
         </div>
       </div>
 
@@ -135,8 +216,10 @@ export function CourseForm({
       </div>
 
       <div className="flex justify-end">
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+        <Button type="submit" disabled={isSubmitting || thumbnailUploading}>
+          {isSubmitting || thumbnailUploading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : null}
           {submitLabel}
         </Button>
       </div>

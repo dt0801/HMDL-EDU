@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Search, ShieldAlert, ShieldCheck, Users } from "lucide-react";
+import { Search, UserPlus, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/layout/empty-state";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -16,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -25,22 +27,46 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToggleUserActive, useUsers } from "@/hooks/useUsers";
-import { formatDate, roleLabel } from "@/lib/utils";
+import { getInitials, roleLabel } from "@/lib/utils";
 import type { Profile } from "@/types/database.types";
 
 import { EditUserDialog } from "./edit-user-dialog";
+
+function roleBadgeVariant(role: Profile["role"]): React.ComponentProps<typeof Badge>["variant"] {
+  switch (role) {
+    case "admin":
+      return "default";
+    case "instructor":
+      return "warning";
+    case "student":
+      return "secondary";
+    default:
+      return "secondary";
+  }
+}
 
 export function UsersClient() {
   const { data: users, isLoading } = useUsers();
   const toggleActive = useToggleUserActive();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [editing, setEditing] = useState<Profile | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const departments = useMemo(() => {
+    const set = new Set<string>();
+    (users ?? []).forEach((u) => {
+      if (u.department) set.add(u.department);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "vi"));
+  }, [users]);
 
   const filtered = useMemo(() => {
     const list = users ?? [];
     return list.filter((u) => {
       if (roleFilter !== "all" && u.role !== roleFilter) return false;
+      if (departmentFilter !== "all" && (u.department ?? "") !== departmentFilter) return false;
       if (!search) return true;
       const s = search.toLowerCase();
       return (
@@ -49,7 +75,7 @@ export function UsersClient() {
         (u.department ?? "").toLowerCase().includes(s)
       );
     });
-  }, [users, search, roleFilter]);
+  }, [users, search, roleFilter, departmentFilter]);
 
   return (
     <>
@@ -60,7 +86,7 @@ export function UsersClient() {
 
       <Card>
         <CardContent className="p-4 sm:p-6">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -70,17 +96,38 @@ export function UsersClient() {
                 className="pl-9"
               />
             </div>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="sm:w-48">
-                <SelectValue placeholder="Vai trò" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả vai trò</SelectItem>
-                <SelectItem value="admin">Quản trị viên</SelectItem>
-                <SelectItem value="instructor">Giảng viên</SelectItem>
-                <SelectItem value="student">Học viên</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-3 sm:flex-row lg:flex-none">
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="sm:w-48">
+                  <SelectValue placeholder="Vai trò" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả vai trò</SelectItem>
+                  <SelectItem value="admin">Quản trị viên</SelectItem>
+                  <SelectItem value="instructor">Giảng viên</SelectItem>
+                  <SelectItem value="student">Học viên</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className="sm:w-56">
+                  <SelectValue placeholder="Khoa/phòng ban" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả khoa</SelectItem>
+                  {departments.map((d) => (
+                    <SelectItem key={d} value={d}>
+                      {d}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button className="sm:w-auto" onClick={() => setCreateOpen(true)}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Thêm user
+              </Button>
+            </div>
           </div>
 
           {isLoading ? (
@@ -91,61 +138,44 @@ export function UsersClient() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Avatar</TableHead>
                   <TableHead>Họ tên</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Khoa</TableHead>
                   <TableHead>Vai trò</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead>Ngày tạo</TableHead>
-                  <TableHead className="text-right">Thao tác</TableHead>
+                  <TableHead className="text-right">Kích hoạt</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map((u) => (
-                  <TableRow key={u.id}>
+                  <TableRow
+                    key={u.id}
+                    className="cursor-pointer"
+                    onClick={() => setEditing(u)}
+                  >
+                    <TableCell>
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={u.avatar_url ?? undefined} alt={u.full_name} />
+                        <AvatarFallback>{getInitials(u.full_name)}</AvatarFallback>
+                      </Avatar>
+                    </TableCell>
                     <TableCell className="font-medium">{u.full_name}</TableCell>
                     <TableCell className="text-muted-foreground">{u.email}</TableCell>
                     <TableCell>{u.department ?? "—"}</TableCell>
                     <TableCell>
-                      <Badge variant={u.role === "admin" ? "default" : "secondary"}>
-                        {roleLabel(u.role)}
-                      </Badge>
+                      <Badge variant={roleBadgeVariant(u.role)}>{roleLabel(u.role)}</Badge>
                     </TableCell>
-                    <TableCell>
-                      {u.is_active ? (
-                        <Badge variant="success">Hoạt động</Badge>
-                      ) : (
-                        <Badge variant="destructive">Đã khóa</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(u.created_at)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setEditing(u)}
-                          aria-label="Chỉnh sửa"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            toggleActive.mutate({ id: u.id, is_active: !u.is_active })
-                          }
+                    <TableCell className="text-right">
+                      <div className="flex justify-end">
+                        <Switch
+                          checked={u.is_active}
                           disabled={toggleActive.isPending}
-                          aria-label={u.is_active ? "Khóa tài khoản" : "Mở khóa"}
-                        >
-                          {u.is_active ? (
-                            <ShieldAlert className="h-4 w-4 text-destructive" />
-                          ) : (
-                            <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                          )}
-                        </Button>
+                          onCheckedChange={(checked) =>
+                            toggleActive.mutate({ id: u.id, is_active: checked })
+                          }
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={u.is_active ? "Tắt tài khoản" : "Bật tài khoản"}
+                        />
                       </div>
                     </TableCell>
                   </TableRow>
@@ -158,6 +188,10 @@ export function UsersClient() {
 
       {editing ? (
         <EditUserDialog user={editing} open onOpenChange={(o) => !o && setEditing(null)} />
+      ) : null}
+
+      {createOpen ? (
+        <EditUserDialog open onOpenChange={(o) => !o && setCreateOpen(false)} />
       ) : null}
     </>
   );

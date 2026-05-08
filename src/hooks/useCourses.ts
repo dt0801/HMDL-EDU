@@ -9,6 +9,7 @@ import type { Course } from "@/types/database.types";
 export type CourseWithInstructor = Course & {
   instructor: { id: string; full_name: string } | null;
   enrollments_count?: number;
+  lessons_count?: number;
 };
 
 export function useCourses(opts?: { onlyMine?: boolean; instructorId?: string }) {
@@ -18,12 +19,21 @@ export function useCourses(opts?: { onlyMine?: boolean; instructorId?: string })
     queryFn: async () => {
       let q = supabase
         .from("courses")
-        .select("*, instructor:profiles!courses_instructor_id_fkey(id, full_name)")
+        .select(
+          "*, instructor:profiles!courses_instructor_id_fkey(id, full_name), enrollments(count), lessons(count)"
+        )
         .order("created_at", { ascending: false });
       if (opts?.instructorId) q = q.eq("instructor_id", opts.instructorId);
       const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []) as unknown as CourseWithInstructor[];
+      const rows = (data ?? []) as unknown as Array<
+        CourseWithInstructor & { enrollments?: { count: number }[]; lessons?: { count: number }[] }
+      >;
+      return rows.map((r) => ({
+        ...r,
+        enrollments_count: r.enrollments?.[0]?.count ?? 0,
+        lessons_count: r.lessons?.[0]?.count ?? 0,
+      }));
     },
   });
 }
