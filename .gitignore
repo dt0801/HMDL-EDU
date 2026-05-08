@@ -34,10 +34,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# supabase
-**/supabase/.branches
-**/supabase/.temp
-**/supabase/.env
+# supabase (không push lên git)
+/supabase/
+
+# local tools (không push binaries lên git)
+/tools/
 
 # IDE
 .vscode/*

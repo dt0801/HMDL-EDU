@@ -18,6 +18,7 @@ export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const errorParam = params.get("error");
+  const nextParam = params.get("next");
   const [isPending, startTransition] = useTransition();
 
   const {
@@ -34,6 +35,8 @@ export function LoginForm() {
       const result = await signInAction(data);
       if (result.ok) {
         toast.success("Đăng nhập thành công");
+        // Điều hướng chủ động để middleware áp dụng redirect theo role.
+        router.push(nextParam ?? "/");
         router.refresh();
       } else {
         toast.error(result.error);
