@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -15,7 +15,6 @@ import { createClient } from "@/lib/supabase/client";
 import { signInSchema, type SignInInput } from "@/lib/validations/auth.schema";
 
 export function LoginForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const errorParam = params.get("error");
   const nextParam = params.get("next");
@@ -44,9 +43,8 @@ export function LoginForm() {
       }
 
       toast.success("Đăng nhập thành công");
-      // Điều hướng chủ động để middleware áp dụng redirect theo role.
-      router.push(nextParam ?? "/");
-      router.refresh();
+      // Hard navigation để đảm bảo session/cookie sẵn sàng trước khi middleware chạy.
+      window.location.assign(nextParam ?? "/");
     });
   };
 
