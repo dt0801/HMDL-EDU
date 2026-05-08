@@ -1,4 +1,8 @@
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
+
+import { createClient } from "@/lib/supabase/server";
+import type { UserRole } from "@/types/database.types";
 
 import { LoginForm } from "./login-form";
 
@@ -6,7 +10,29 @@ export const metadata = {
   title: "Đăng nhập | HMDL-edu",
 };
 
-export default function LoginPage() {
+const ROLE_HOME: Record<UserRole, string> = {
+  admin: "/admin/users",
+  instructor: "/instructor/courses",
+  student: "/student/dashboard",
+};
+
+export default async function LoginPage() {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Nếu đã đăng nhập thì điều hướng luôn (không phụ thuộc middleware).
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    redirect(profile?.role ? ROLE_HOME[profile.role] : "/student/dashboard");
+  }
+
   return (
     <div className="w-full max-w-md space-y-6">
       <div className="space-y-2 text-center">

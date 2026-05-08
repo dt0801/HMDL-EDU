@@ -69,6 +69,25 @@ export async function updateSession(request: NextRequest) {
     .eq("id", user.id)
     .maybeSingle();
 
+  // Nếu thiếu profile, thử tạo bằng chính session (policy chỉ cho role=student).
+  if (!profile) {
+    await supabase.from("profiles").insert({
+      id: user.id,
+      full_name: user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "User",
+      email: user.email ?? "",
+      role: "student",
+      department: user.user_metadata?.department ?? null,
+      is_active: true,
+    });
+
+    const refetch = await supabase
+      .from("profiles")
+      .select("role, is_active")
+      .eq("id", user.id)
+      .maybeSingle();
+    profile = refetch.data ?? null;
+  }
+
   // Nếu user đã tồn tại nhưng chưa có profile (ví dụ migrations/triggers apply sau),
   // thử auto-provision bằng service role để tránh redirect loop.
   if (!profile && process.env.SUPABASE_SERVICE_ROLE_KEY) {
