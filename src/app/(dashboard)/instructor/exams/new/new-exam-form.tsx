@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Stepper } from "@/components/ui/stepper";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -281,11 +282,15 @@ export function NewExamForm({
               Làm theo 3 bước: Thông tin → Câu hỏi → Cài đặt. Bạn có thể lưu nháp bất kỳ lúc nào.
             </CardDescription>
             <Tabs value={step} onValueChange={(v) => setStep(v as typeof step)}>
-              <TabsList className="w-full justify-start">
-                <TabsTrigger value="info">1. Thông tin</TabsTrigger>
-                <TabsTrigger value="questions">2. Câu hỏi</TabsTrigger>
-                <TabsTrigger value="settings">3. Cài đặt</TabsTrigger>
-              </TabsList>
+              <Stepper
+                value={step}
+                onValueChange={(k) => setStep(k as typeof step)}
+                items={[
+                  { key: "info", label: "Step 1", description: "Thông tin" },
+                  { key: "questions", label: "Step 2", description: "Câu hỏi" },
+                  { key: "settings", label: "Step 3", description: "Cài đặt" },
+                ]}
+              />
 
               <TabsContent value="info" className="mt-4">
                 <div className="space-y-4">

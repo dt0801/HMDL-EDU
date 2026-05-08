@@ -9,7 +9,8 @@ import { toast } from "sonner";
 import { CourseForm } from "@/components/courses/course-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Stepper } from "@/components/ui/stepper";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useCreateCourse } from "@/hooks/useCourses";
 import type { CourseInput } from "@/lib/validations/course.schema";
 
@@ -45,15 +46,15 @@ export function NewCourseForm({ instructorId }: { instructorId: string }) {
       </Button>
 
       <Tabs value={step} onValueChange={(v) => setStep(v as typeof step)}>
-        <TabsList className="w-full justify-start">
-          <TabsTrigger value="info">1. Thông tin</TabsTrigger>
-          <TabsTrigger value="lessons" disabled={!createdCourseId}>
-            2. Bài học
-          </TabsTrigger>
-          <TabsTrigger value="exams" disabled={!createdCourseId}>
-            3. Đề thi
-          </TabsTrigger>
-        </TabsList>
+        <Stepper
+          value={step}
+          onValueChange={(k) => setStep(k as typeof step)}
+          items={[
+            { key: "info", label: "Step 1", description: "Thông tin" },
+            { key: "lessons", label: "Step 2", description: "Bài học", disabled: !createdCourseId },
+            { key: "exams", label: "Step 3", description: "Đề thi", disabled: !createdCourseId },
+          ]}
+        />
 
         <TabsContent value="info" className="mt-4">
           <CourseForm onSubmit={onSubmit} isSubmitting={createCourse.isPending} submitLabel="Tạo khóa học" />
