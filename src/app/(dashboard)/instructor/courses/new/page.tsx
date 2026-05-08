@@ -19,7 +19,7 @@ export default async function NewCoursePage() {
     <>
       <PageHeader
         title="Tạo khóa học mới"
-        description="Điền thông tin cơ bản. Bạn có thể thêm bài học sau khi tạo."
+        description="Làm theo 3 bước: Thông tin → Bài học → Đề thi."
       />
       <Card>
         <CardContent className="p-4 sm:p-6">
