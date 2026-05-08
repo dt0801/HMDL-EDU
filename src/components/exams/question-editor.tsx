@@ -30,7 +30,7 @@ import type { QuestionWithAnswers } from "@/hooks/useExams";
 
 const TYPE_LABELS: Record<QuestionType, string> = {
   mcq: "Một đáp án đúng",
-  multi: "Nhiều đap án đúng",
+  multi: "Nhiều đap an đúng",
   true_false: "Đúng / Sai",
 };
 
