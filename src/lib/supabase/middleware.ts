@@ -63,11 +63,47 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Đã đăng nhập - lấy role để guard route theo phân quyền
-  const { data: profile } = await supabase
+  let { data: profile } = await supabase
     .from("profiles")
     .select("role, is_active")
     .eq("id", user.id)
     .maybeSingle();
+
+  // Nếu user đã tồn tại nhưng chưa có profile (ví dụ migrations/triggers apply sau),
+  // thử auto-provision bằng service role để tránh redirect loop.
+  if (!profile && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const service = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        cookies: {
+          getAll() {
+            return [];
+          },
+          setAll() {},
+        },
+      }
+    );
+
+    await service.from("profiles").upsert(
+      {
+        id: user.id,
+        full_name: user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "User",
+        email: user.email ?? "",
+        role: (user.user_metadata?.role as UserRole | undefined) ?? "student",
+        department: user.user_metadata?.department ?? null,
+        is_active: true,
+      },
+      { onConflict: "id" }
+    );
+
+    const refetch = await supabase
+      .from("profiles")
+      .select("role, is_active")
+      .eq("id", user.id)
+      .maybeSingle();
+    profile = refetch.data ?? null;
+  }
 
   const role: UserRole | null = profile?.role ?? null;
 
