@@ -11,7 +11,7 @@ export const metadata = { title: "Tạo đề thi" };
 export default async function NewExamPage({
   searchParams,
 }: {
-  searchParams: { courseId?: string };
+  searchParams: { courseId?: string; mode?: string };
 }) {
   const supabase = createClient();
   const {
@@ -29,13 +29,14 @@ export default async function NewExamPage({
     <>
       <PageHeader
         title="Tạo đề thi mới"
-        description="Đặt thông tin chung. Sau khi tạo, bạn có thể thêm câu hỏi."
+        description="Tạo thông tin đề thi, thêm câu hỏi thủ công hoặc upload từ file."
       />
       <Card>
         <CardContent className="p-4 sm:p-6">
           <NewExamForm
             courses={courses ?? []}
             defaultCourseId={searchParams.courseId}
+            defaultMode={searchParams.mode}
           />
         </CardContent>
       </Card>

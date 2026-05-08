@@ -34,7 +34,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { ExamInput, QuestionInput } from "@/lib/validations/exam.schema";
 
-export function ExamDetailClient({ examId }: { examId: string }) {
+export function ExamDetailClient({
+  examId,
+  fromCourseId,
+}: {
+  examId: string;
+  fromCourseId?: string;
+}) {
   const { data: exam, isLoading } = useExam(examId);
   const { data: questions, isLoading: qLoading } = useExamQuestions(examId);
   const saveQuestion = useSaveQuestion();
@@ -85,8 +91,9 @@ export function ExamDetailClient({ examId }: { examId: string }) {
   return (
     <>
       <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2">
-        <Link href="/instructor/exams">
-          <ArrowLeft className="mr-1 h-4 w-4" /> Đề thi
+        <Link href={fromCourseId ? `/instructor/courses/${fromCourseId}` : "/instructor/exams"}>
+          <ArrowLeft className="mr-1 h-4 w-4" />{" "}
+          {fromCourseId ? "Quay lại khóa học" : "Đề thi"}
         </Link>
       </Button>
       <PageHeader

@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Plus, Upload } from "lucide-react";
 import Link from "next/link";
 
 import { EmptyState } from "@/components/layout/empty-state";
@@ -26,12 +26,21 @@ export function ExamsTab({ courseId }: { courseId: string }) {
     <Card>
       <CardContent className="space-y-3 p-4 sm:p-6">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">Quản lý các đề thi của khóa học.</p>
-          <Button asChild size="sm">
-            <Link href={`/instructor/exams/new?courseId=${courseId}`}>
-              <Plus className="mr-1 h-4 w-4" /> Tạo đề thi
-            </Link>
-          </Button>
+          <p className="text-sm text-muted-foreground">
+            Tạo đề thi, nhập câu hỏi thủ công hoặc upload từ file Excel/CSV.
+          </p>
+          <div className="flex items-center gap-2">
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/instructor/exams/new?courseId=${courseId}&mode=upload`}>
+                <Upload className="mr-1 h-4 w-4" /> Upload đề thi
+              </Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link href={`/instructor/exams/new?courseId=${courseId}`}>
+                <Plus className="mr-1 h-4 w-4" /> Tạo đề thi
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -40,7 +49,21 @@ export function ExamsTab({ courseId }: { courseId: string }) {
           <EmptyState
             icon={ClipboardList}
             title="Chưa có đề thi"
-            description="Bạn có thể tạo đề thi gắn với khóa học này."
+            description="Bạn có thể tạo đề thi mới hoặc upload danh sách câu hỏi từ file mẫu."
+            action={
+              <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+                <Button asChild>
+                  <Link href={`/instructor/exams/new?courseId=${courseId}`}>
+                    <Plus className="mr-1 h-4 w-4" /> Tạo đề thi
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href={`/instructor/exams/new?courseId=${courseId}&mode=upload`}>
+                    <Upload className="mr-1 h-4 w-4" /> Upload đề thi
+                  </Link>
+                </Button>
+              </div>
+            }
           />
         ) : (
           <Table>
