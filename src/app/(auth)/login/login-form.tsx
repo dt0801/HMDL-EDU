@@ -7,11 +7,11 @@ import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { signInAction } from "@/app/(auth)/actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createClient } from "@/lib/supabase/client";
 import { signInSchema, type SignInInput } from "@/lib/validations/auth.schema";
 
 export function LoginForm() {
@@ -32,15 +32,21 @@ export function LoginForm() {
 
   const onSubmit = (data: SignInInput) => {
     startTransition(async () => {
-      const result = await signInAction(data);
-      if (result.ok) {
-        toast.success("Đăng nhập thành công");
-        // Điều hướng chủ động để middleware áp dụng redirect theo role.
-        router.push(nextParam ?? "/");
-        router.refresh();
-      } else {
-        toast.error(result.error);
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (error) {
+        toast.error("Email hoặc mật khẩu không đúng");
+        return;
       }
+
+      toast.success("Đăng nhập thành công");
+      // Điều hướng chủ động để middleware áp dụng redirect theo role.
+      router.push(nextParam ?? "/");
+      router.refresh();
     });
   };
 
