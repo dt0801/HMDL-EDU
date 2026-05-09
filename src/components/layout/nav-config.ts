@@ -65,7 +65,7 @@ export const NAV_BY_ROLE: Record<UserRole, NavSection[]> = {
       items: [
         { href: "/admin/users", label: "Người dùng", icon: Users },
         { href: "/admin/roles", label: "Vai trò & quyền hạn", icon: Shield, disabled: true, badge: "Sắp có" },
-        { href: "/admin/departments", label: "Khoa / Phòng ban", icon: Building2, disabled: true, badge: "Sắp có" },
+        { href: "/admin/departments", label: "Khoa / Phòng ban", icon: Building2 },
         { href: "/admin/assignments", label: "Phân công giảng viên", icon: UserCog, disabled: true, badge: "Sắp có" },
       ],
     },

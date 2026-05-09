@@ -26,9 +26,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useDepartments } from "@/hooks/useDepartments";
 import { useToggleUserActive, useUsers } from "@/hooks/useUsers";
 import { getInitials, roleLabel } from "@/lib/utils";
-import type { Profile } from "@/types/database.types";
+import type { Profile, ProfileWithDepartmentEmbed } from "@/types/database.types";
 
 import { EditUserDialog } from "./edit-user-dialog";
 
@@ -45,34 +46,36 @@ function roleBadgeVariant(role: Profile["role"]): React.ComponentProps<typeof Ba
   }
 }
 
+function departmentDisplayName(u: ProfileWithDepartmentEmbed): string {
+  return u.departments?.name ?? u.department ?? "";
+}
+
 export function UsersClient() {
   const { data: users, isLoading } = useUsers();
+  const { data: departmentList } = useDepartments();
   const toggleActive = useToggleUserActive();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
-  const [editing, setEditing] = useState<Profile | null>(null);
+  const [editing, setEditing] = useState<ProfileWithDepartmentEmbed | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-
-  const departments = useMemo(() => {
-    const set = new Set<string>();
-    (users ?? []).forEach((u) => {
-      if (u.department) set.add(u.department);
-    });
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "vi"));
-  }, [users]);
 
   const filtered = useMemo(() => {
     const list = users ?? [];
     return list.filter((u) => {
       if (roleFilter !== "all" && u.role !== roleFilter) return false;
-      if (departmentFilter !== "all" && (u.department ?? "") !== departmentFilter) return false;
+      if (departmentFilter === "__none__") {
+        if (u.department_id != null) return false;
+      } else if (departmentFilter !== "all" && u.department_id !== departmentFilter) {
+        return false;
+      }
       if (!search) return true;
       const s = search.toLowerCase();
+      const deptLabel = departmentDisplayName(u).toLowerCase();
       return (
         u.full_name.toLowerCase().includes(s) ||
         u.email.toLowerCase().includes(s) ||
-        (u.department ?? "").toLowerCase().includes(s)
+        deptLabel.includes(s)
       );
     });
   }, [users, search, roleFilter, departmentFilter]);
@@ -115,9 +118,10 @@ export function UsersClient() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả khoa</SelectItem>
-                  {departments.map((d) => (
-                    <SelectItem key={d} value={d}>
-                      {d}
+                  <SelectItem value="__none__">Chưa gán phòng ban</SelectItem>
+                  {(departmentList ?? []).map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -161,7 +165,7 @@ export function UsersClient() {
                     </TableCell>
                     <TableCell className="font-medium">{u.full_name}</TableCell>
                     <TableCell className="text-muted-foreground">{u.email}</TableCell>
-                    <TableCell>{u.department ?? "—"}</TableCell>
+                    <TableCell>{departmentDisplayName(u) || "—"}</TableCell>
                     <TableCell>
                       <Badge variant={roleBadgeVariant(u.role)}>{roleLabel(u.role)}</Badge>
                     </TableCell>

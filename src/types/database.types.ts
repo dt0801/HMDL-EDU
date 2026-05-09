@@ -17,6 +17,7 @@ type ProfileRow = {
   email: string;
   role: UserRole;
   department: string | null;
+  department_id: string | null;
   avatar_url: string | null;
   is_active: boolean;
   created_at: string;
@@ -27,8 +28,24 @@ type ProfileInsert = {
   email: string;
   role: UserRole;
   department?: string | null;
+  department_id?: string | null;
   avatar_url?: string | null;
   is_active?: boolean;
+  created_at?: string;
+};
+
+type DepartmentRow = {
+  id: string;
+  name: string;
+  code: string | null;
+  sort_order: number;
+  created_at: string;
+};
+type DepartmentInsert = {
+  id?: string;
+  name: string;
+  code?: string | null;
+  sort_order?: number;
   created_at?: string;
 };
 
@@ -243,11 +260,25 @@ type Rel = {
 export type Database = {
   public: {
     Tables: {
+      departments: {
+        Row: DepartmentRow;
+        Insert: DepartmentInsert;
+        Update: Partial<DepartmentInsert>;
+        Relationships: [];
+      };
       profiles: {
         Row: ProfileRow;
         Insert: ProfileInsert;
         Update: Partial<ProfileInsert>;
-        Relationships: Rel[];
+        Relationships: [
+          {
+            foreignKeyName: "profiles_department_id_fkey";
+            columns: ["department_id"];
+            isOneToOne: false;
+            referencedRelation: "departments";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       courses: {
         Row: CourseRow;
@@ -322,6 +353,12 @@ export type Database = {
 };
 
 export type Profile = ProfileRow;
+export type Department = DepartmentRow;
+
+/** profiles + embed departments(...) từ admin users query */
+export type ProfileWithDepartmentEmbed = Profile & {
+  departments: Pick<Department, "id" | "name"> | null;
+};
 export type Course = CourseRow;
 export type Lesson = LessonRow;
 export type Enrollment = EnrollmentRow;

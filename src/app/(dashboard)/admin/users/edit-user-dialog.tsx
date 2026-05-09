@@ -26,15 +26,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useDepartments } from "@/hooks/useDepartments";
 import { useUpdateUser, useUsers } from "@/hooks/useUsers";
-import type { Profile } from "@/types/database.types";
+import { updateUserSchema } from "@/lib/validations/user.schema";
+import type { ProfileWithDepartmentEmbed } from "@/types/database.types";
 
-const formSchema = z.object({
-  full_name: z.string().min(2, "Họ tên tối thiểu 2 ký tự").max(100),
+const formSchema = updateUserSchema.omit({ department: true }).extend({
   email: z.string().email("Email không hợp lệ").max(200),
-  role: z.enum(["admin", "instructor", "student"]),
-  department: z.string().max(100).optional().or(z.literal("")),
-  is_active: z.boolean(),
+  department_id: z.union([z.string().uuid(), z.literal("")]).optional(),
 });
 
 type FormInput = z.infer<typeof formSchema>;
@@ -44,12 +43,12 @@ export function EditUserDialog({
   open,
   onOpenChange,
 }: {
-  user?: Profile;
+  user?: ProfileWithDepartmentEmbed;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  // Bắt buộc “dùng hook useUsers” theo spec (đồng thời giúp cache được invalidated đúng).
   useUsers();
+  const { data: departments } = useDepartments();
 
   const updateUser = useUpdateUser();
 
@@ -61,7 +60,7 @@ export function EditUserDialog({
       full_name: user?.full_name ?? "",
       email: user?.email ?? "",
       role: user?.role ?? "student",
-      department: user?.department ?? "",
+      department_id: user?.department_id ?? "",
       is_active: user?.is_active ?? true,
     }),
     [user]
@@ -80,6 +79,7 @@ export function EditUserDialog({
   });
 
   const role = watch("role");
+  const departmentId = watch("department_id");
   const isActive = watch("is_active");
 
   useEffect(() => {
@@ -96,13 +96,24 @@ export function EditUserDialog({
 
     if (!user) return;
 
+    const deptId =
+      data.department_id && data.department_id !== "" ? data.department_id : null;
+    const deptName = deptId
+      ? (departments ?? []).find((d) => d.id === deptId)?.name ?? null
+      : null;
+
+    const parsed = updateUserSchema.parse({
+      full_name: data.full_name,
+      role: data.role,
+      department_id: deptId ?? "",
+      department: deptName,
+      is_active: data.is_active,
+    });
+
     updateUser.mutate(
       {
         id: user.id,
-        full_name: data.full_name,
-        role: data.role,
-        department: data.department,
-        is_active: data.is_active,
+        ...parsed,
       },
       {
         onSuccess: () => {
@@ -150,8 +161,28 @@ export function EditUserDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="department">Khoa/phòng ban</Label>
-            <Input id="department" {...register("department")} />
+            <Label>Khoa/phòng ban</Label>
+            <Select
+              value={departmentId === "" || departmentId === undefined ? "__none__" : departmentId}
+              onValueChange={(v) =>
+                setValue("department_id", v === "__none__" ? "" : v, { shouldValidate: true })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Chọn phòng ban" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">— Không gán —</SelectItem>
+                {(departments ?? []).map((d) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Quản lý danh mục tại trang Khoa / Phòng ban.
+            </p>
           </div>
 
           <div className="space-y-2">
