@@ -19,6 +19,8 @@ type ProfileRow = {
   department: string | null;
   department_id: string | null;
   avatar_url: string | null;
+  phone: string | null;
+  profile_completed_at: string | null;
   is_active: boolean;
   created_at: string;
 };
@@ -30,6 +32,8 @@ type ProfileInsert = {
   department?: string | null;
   department_id?: string | null;
   avatar_url?: string | null;
+  phone?: string | null;
+  profile_completed_at?: string | null;
   is_active?: boolean;
   created_at?: string;
 };

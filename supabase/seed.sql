@@ -27,14 +27,14 @@ begin
   -- auth.users
   insert into auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, aud, role, created_at, updated_at)
   values
-    (v_admin_id,  '00000000-0000-0000-0000-000000000000', 'admin@hmdl.vn',    v_password_hash, now(), jsonb_build_object('full_name','Quản trị viên','role','admin','department','Phòng CNTT'), 'authenticated','authenticated', now(), now()),
-    (v_minh_id,   '00000000-0000-0000-0000-000000000000', 'bs.minh@hmdl.vn',  v_password_hash, now(), jsonb_build_object('full_name','BS. Lê Văn Minh','role','instructor','department','Khoa Tim mạch'), 'authenticated','authenticated', now(), now()),
-    (v_hoa_id,    '00000000-0000-0000-0000-000000000000', 'bs.hoa@hmdl.vn',   v_password_hash, now(), jsonb_build_object('full_name','BS. Trần Thị Hòa','role','instructor','department','Khoa Hồi sức'), 'authenticated','authenticated', now(), now()),
-    (v_lan_id,    '00000000-0000-0000-0000-000000000000', 'dd.lan@hmdl.vn',   v_password_hash, now(), jsonb_build_object('full_name','ĐD. Nguyễn Thị Lan','role','student','department','Khoa Tim mạch'), 'authenticated','authenticated', now(), now()),
-    (v_tuan_id,   '00000000-0000-0000-0000-000000000000', 'dd.tuan@hmdl.vn',  v_password_hash, now(), jsonb_build_object('full_name','ĐD. Phạm Văn Tuấn','role','student','department','Khoa Cấp cứu'), 'authenticated','authenticated', now(), now()),
-    (v_hoang_id,  '00000000-0000-0000-0000-000000000000', 'bs.hoang@hmdl.vn', v_password_hash, now(), jsonb_build_object('full_name','BS. Đỗ Quang Hoàng','role','student','department','Khoa Nội'), 'authenticated','authenticated', now(), now()),
-    (v_thao_id,   '00000000-0000-0000-0000-000000000000', 'ktv.thao@hmdl.vn', v_password_hash, now(), jsonb_build_object('full_name','KTV. Bùi Thu Thảo','role','student','department','Khoa Chẩn đoán hình ảnh'), 'authenticated','authenticated', now(), now()),
-    (v_linh_id,   '00000000-0000-0000-0000-000000000000', 'dd.linh@hmdl.vn',  v_password_hash, now(), jsonb_build_object('full_name','ĐD. Vũ Thùy Linh','role','student','department','Khoa Hồi sức'), 'authenticated','authenticated', now(), now())
+    (v_admin_id,  '00000000-0000-0000-0000-000000000000', 'admin@hmdl.vn',    v_password_hash, now(), jsonb_build_object('full_name','Quản trị viên','role','admin','department','PHÒNG CÔNG NGHỆ THÔNG TIN'), 'authenticated','authenticated', now(), now()),
+    (v_minh_id,   '00000000-0000-0000-0000-000000000000', 'bs.minh@hmdl.vn',  v_password_hash, now(), jsonb_build_object('full_name','BS. Lê Văn Minh','role','instructor','department','KHOA NỘI 1'), 'authenticated','authenticated', now(), now()),
+    (v_hoa_id,    '00000000-0000-0000-0000-000000000000', 'bs.hoa@hmdl.vn',   v_password_hash, now(), jsonb_build_object('full_name','BS. Trần Thị Hòa','role','instructor','department','KHOA HỒI SỨC'), 'authenticated','authenticated', now(), now()),
+    (v_lan_id,    '00000000-0000-0000-0000-000000000000', 'dd.lan@hmdl.vn',   v_password_hash, now(), jsonb_build_object('full_name','ĐD. Nguyễn Thị Lan','role','student','department','KHOA NỘI 1'), 'authenticated','authenticated', now(), now()),
+    (v_tuan_id,   '00000000-0000-0000-0000-000000000000', 'dd.tuan@hmdl.vn',  v_password_hash, now(), jsonb_build_object('full_name','ĐD. Phạm Văn Tuấn','role','student','department','KHOA CẤP CỨU'), 'authenticated','authenticated', now(), now()),
+    (v_hoang_id,  '00000000-0000-0000-0000-000000000000', 'bs.hoang@hmdl.vn', v_password_hash, now(), jsonb_build_object('full_name','BS. Đỗ Quang Hoàng','role','student','department','KHOA NỘI 2'), 'authenticated','authenticated', now(), now()),
+    (v_thao_id,   '00000000-0000-0000-0000-000000000000', 'ktv.thao@hmdl.vn', v_password_hash, now(), jsonb_build_object('full_name','KTV. Bùi Thu Thảo','role','student','department','KHOA CHẨN ĐOÁN HÌNH ẢNH'), 'authenticated','authenticated', now(), now()),
+    (v_linh_id,   '00000000-0000-0000-0000-000000000000', 'dd.linh@hmdl.vn',  v_password_hash, now(), jsonb_build_object('full_name','ĐD. Vũ Thùy Linh','role','student','department','KHOA HỒI SỨC'), 'authenticated','authenticated', now(), now())
   on conflict (id) do nothing;
 
   -- auth.identities (yêu cầu cho login bằng email/password)
@@ -51,6 +51,68 @@ begin
   on conflict do nothing;
 end;
 $$;
+
+-- ------------------------------------------------------------
+-- Khoa / phòng ban theo cây kho
+-- ------------------------------------------------------------
+insert into public.departments (name, sort_order)
+values
+  ('PHÒNG HÀNH CHÍNH QUẢN TRỊ', 10),
+  ('BẢO VỆ', 20),
+  ('NGOẠI CẢNH', 30),
+  ('TỔ LÁI XE', 40),
+  ('VĂN PHÒNG HÀNH CHÍNH', 50),
+  ('PHÒNG KẾ TOÁN & THUẾ', 60),
+  ('PHÒNG NHÂN SỰ', 70),
+  ('PHÒNG KINH DOANH', 80),
+  ('PHÒNG MARKETING', 90),
+  ('PHÒNG CHĂM SÓC KHÁCH HÀNG', 100),
+  ('KHOA KHÁM BỆNH', 110),
+  ('KHOA CHẨN ĐOÁN HÌNH ẢNH', 120),
+  ('PHÒNG SIÊU ÂM', 130),
+  ('PHÒNG NỘI SOI TIÊU HÓA', 140),
+  ('PHÒNG X-QUANG', 150),
+  ('PHÒNG ĐIỆN TIM', 160),
+  ('PHÒNG CT', 170),
+  ('KHOA CẤP CỨU', 180),
+  ('KHOA NGOẠI', 190),
+  ('KHOA NỘI 1', 200),
+  ('KHOA SẢN', 210),
+  ('KHOA NHI', 220),
+  ('PHÒNG CÔNG NGHỆ THÔNG TIN', 230),
+  ('BAN GIÁM ĐỐC BỆNH VIỆN', 240),
+  ('PHÒNG KẾ HOẠCH TỔNG HỢP', 250),
+  ('PHÒNG MUA HÀNG', 260),
+  ('PHÒNG THIẾT BỊ Y TẾ', 270),
+  ('KHOA DƯỢC', 280),
+  ('KIỂM SOÁT NHIỄM KHUẨN', 290),
+  ('KHOA PHẪU THUẬT - GÂY MÊ HỒI SỨC', 300),
+  ('KHOA XÉT NGHIỆM', 310),
+  ('PHÒNG QUẢN LÝ CHUYÊN MÔN ĐIỀU DƯỠNG, NHS, KTV', 320),
+  ('THU NGÂN', 330),
+  ('PHÒNG KẾ TOÁN', 340),
+  ('HỘ LÝ', 350),
+  ('BỘ PHẬN BHYT', 360),
+  ('KHOA HỒI SỨC', 370),
+  ('KHOA NỘI 2', 380),
+  ('KHOA Y HỌC CỔ TRUYỀN & PHỤC HỒI CHỨC NĂNG', 390),
+  ('KHOA DINH DƯỠNG', 400),
+  ('QUẢN LÝ CƠ SỞ VẬT CHẤT', 410),
+  ('BẢO TRÌ', 420),
+  ('PHÒNG QUẢN LÝ CHẤT LƯỢNG', 430)
+on conflict (name) do update
+set
+  sort_order = excluded.sort_order;
+
+update public.profiles p
+set department_id = d.id
+from public.departments d
+where p.department = d.name;
+
+-- Sau reset DB: coi mọi tài khoản seed đã hoàn tất onboarding (cột 0008_profile_onboarding.sql).
+update public.profiles
+set profile_completed_at = coalesce(profile_completed_at, now())
+where profile_completed_at is null;
 
 -- ------------------------------------------------------------
 -- Khóa học mẫu

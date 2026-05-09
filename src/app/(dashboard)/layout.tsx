@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
+import { ProfileOnboardingDialog } from "@/components/profile/profile-onboarding-dialog";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types/database.types";
 
@@ -45,8 +46,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     }
   }
 
+  const needsProfileOnboarding = profile.profile_completed_at == null;
+
   return (
     <div className="flex min-h-screen bg-muted/30">
+      <ProfileOnboardingDialog profile={profile} open={needsProfileOnboarding} />
       <Sidebar role={profile.role} />
       <div className="flex min-h-screen flex-1 flex-col">
         <Header profile={profile} />
