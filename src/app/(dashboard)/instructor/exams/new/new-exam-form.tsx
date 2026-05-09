@@ -274,26 +274,34 @@ export function NewExamForm({
         </Button>
       ) : null}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 pb-24" noValidate>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pb-24" noValidate>
         <Card>
-          <CardHeader className="space-y-2">
-            <CardTitle>Tạo đề thi</CardTitle>
-            <CardDescription>
-              Làm theo 3 bước: Thông tin → Câu hỏi → Cài đặt. Bạn có thể lưu nháp bất kỳ lúc nào.
-            </CardDescription>
-            <Tabs value={step} onValueChange={(v) => setStep(v as typeof step)}>
+          <CardHeader className="space-y-4 pb-2">
+            <div>
+              <CardTitle>Tạo đề thi</CardTitle>
+              <CardDescription className="mt-1.5">
+                Ba bước: thông tin đề → nội dung câu hỏi → cài đặt hiển thị. Có thể lưu nháp bất kỳ lúc nào.
+              </CardDescription>
+            </div>
+            <Tabs value={step} onValueChange={(v) => setStep(v as typeof step)} className="space-y-6">
               <Stepper
                 value={step}
                 onValueChange={(k) => setStep(k as typeof step)}
                 items={[
-                  { key: "info", label: "Step 1", description: "Thông tin" },
-                  { key: "questions", label: "Step 2", description: "Câu hỏi" },
-                  { key: "settings", label: "Step 3", description: "Cài đặt" },
+                  { key: "info", label: "Bước 1", description: "Thông tin" },
+                  { key: "questions", label: "Bước 2", description: "Câu hỏi" },
+                  { key: "settings", label: "Bước 3", description: "Cài đặt" },
                 ]}
               />
 
-              <TabsContent value="info" className="mt-4">
-                <div className="space-y-4">
+              <TabsContent value="info" className="mt-0 focus-visible:outline-none">
+                <div className="mx-auto max-w-2xl space-y-4 pt-1">
+                  <div className="border-b pb-3">
+                    <h3 className="text-sm font-semibold">Thông tin đề thi</h3>
+                    <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                      Chọn khóa học và nhập cấu hình thời gian, điểm đạt.
+                    </p>
+                  </div>
                   <div className="space-y-2">
                     <Label>Khóa học *</Label>
                     <Select value={courseId} onValueChange={setCourseId}>
