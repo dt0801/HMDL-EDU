@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { createClient } from "@/lib/supabase/client";
-import type { UpdateUserInput } from "@/lib/validations/user.schema";
+import type { CreateUserInput, UpdateUserInput } from "@/lib/validations/user.schema";
 import type { ProfileWithDepartmentEmbed } from "@/types/database.types";
 
 export function useUsers() {
@@ -45,6 +45,25 @@ export function useUpdateUser() {
         })
         .eq("id", id);
       if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+  });
+}
+
+export function useCreateUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: CreateUserInput): Promise<{ id: string }> => {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      const json = (await res.json().catch(() => null)) as { id?: string; error?: string } | null;
+      if (!res.ok) {
+        throw new Error(json?.error ?? "Không tạo được người dùng");
+      }
+      return { id: json?.id ?? "" };
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
   });

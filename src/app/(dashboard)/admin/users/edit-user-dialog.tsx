@@ -27,16 +27,17 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useDepartments } from "@/hooks/useDepartments";
-import { useUpdateUser, useUsers } from "@/hooks/useUsers";
-import { updateUserSchema } from "@/lib/validations/user.schema";
+import { useCreateUser, useUpdateUser, useUsers } from "@/hooks/useUsers";
+import { createUserSchema, updateUserSchema } from "@/lib/validations/user.schema";
 import type { ProfileWithDepartmentEmbed } from "@/types/database.types";
 
-const formSchema = updateUserSchema.omit({ department: true }).extend({
+const baseSchema = updateUserSchema.omit({ department: true }).extend({
   email: z.string().email("Email không hợp lệ").max(200),
   department_id: z.union([z.string().uuid(), z.literal("")]).optional(),
+  password: z.string().optional().or(z.literal("")),
 });
 
-type FormInput = z.infer<typeof formSchema>;
+type FormInput = z.infer<typeof baseSchema>;
 
 export function EditUserDialog({
   user,
@@ -51,6 +52,7 @@ export function EditUserDialog({
   const { data: departments } = useDepartments();
 
   const updateUser = useUpdateUser();
+  const createUser = useCreateUser();
 
   const mode: "edit" | "create" = user ? "edit" : "create";
   const title = mode === "edit" ? "Chỉnh sửa người dùng" : "Thêm người dùng";
@@ -62,6 +64,7 @@ export function EditUserDialog({
       role: user?.role ?? "student",
       department_id: user?.department_id ?? "",
       is_active: user?.is_active ?? true,
+      password: "",
     }),
     [user]
   );
@@ -74,7 +77,7 @@ export function EditUserDialog({
     reset,
     formState: { errors },
   } = useForm<FormInput>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(baseSchema),
     defaultValues,
   });
 
@@ -87,20 +90,38 @@ export function EditUserDialog({
   }, [defaultValues, reset]);
 
   const onSubmit = (data: FormInput) => {
-    if (mode === "create") {
-      toast.error(
-        "Chức năng tạo user mới cần API admin (service role) và chưa được cấu hình trong dự án."
-      );
-      return;
-    }
-
-    if (!user) return;
-
     const deptId =
       data.department_id && data.department_id !== "" ? data.department_id : null;
     const deptName = deptId
       ? (departments ?? []).find((d) => d.id === deptId)?.name ?? null
       : null;
+
+    if (mode === "create") {
+      const parsed = createUserSchema.safeParse({
+        full_name: data.full_name,
+        email: data.email,
+        password: data.password ?? "",
+        role: data.role,
+        department_id: deptId ?? "",
+        department: deptName,
+        is_active: data.is_active,
+      });
+      if (!parsed.success) {
+        toast.error(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ");
+        return;
+      }
+
+      createUser.mutate(parsed.data, {
+        onSuccess: () => {
+          toast.success("Tạo người dùng thành công");
+          onOpenChange(false);
+        },
+        onError: (e) => toast.error(e instanceof Error ? e.message : "Có lỗi xảy ra"),
+      });
+      return;
+    }
+
+    if (!user) return;
 
     const parsed = updateUserSchema.parse({
       full_name: data.full_name,
@@ -124,6 +145,8 @@ export function EditUserDialog({
       }
     );
   };
+
+  const isPending = mode === "edit" ? updateUser.isPending : createUser.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -159,6 +182,26 @@ export function EditUserDialog({
               </p>
             ) : null}
           </div>
+
+          {mode === "create" ? (
+            <div className="space-y-2">
+              <Label htmlFor="password">Mật khẩu khởi tạo</Label>
+              <Input
+                id="password"
+                type="text"
+                placeholder="Tối thiểu 8 ký tự"
+                autoComplete="new-password"
+                {...register("password")}
+              />
+              {errors.password ? (
+                <p className="text-sm text-destructive">{errors.password.message}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Hãy gửi mật khẩu này cho người dùng và nhắc họ đổi sau lần đăng nhập đầu tiên.
+                </p>
+              )}
+            </div>
+          ) : null}
 
           <div className="space-y-2">
             <Label>Khoa/phòng ban</Label>
@@ -221,10 +264,8 @@ export function EditUserDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Hủy
             </Button>
-            <Button type="submit" disabled={mode === "edit" ? updateUser.isPending : false}>
-              {mode === "edit" && updateUser.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
+            <Button type="submit" disabled={isPending}>
+              {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {mode === "edit" ? "Lưu" : "Tạo mới"}
             </Button>
           </DialogFooter>

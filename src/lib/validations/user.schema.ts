@@ -12,3 +12,13 @@ export const updateUserSchema = z.object({
 });
 
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+
+export const createUserSchema = updateUserSchema.extend({
+  email: z.string().email("Email không hợp lệ").max(200),
+  password: z
+    .string()
+    .min(8, "Mật khẩu tối thiểu 8 ký tự")
+    .max(72, "Mật khẩu tối đa 72 ký tự"),
+});
+
+export type CreateUserInput = z.infer<typeof createUserSchema>;
