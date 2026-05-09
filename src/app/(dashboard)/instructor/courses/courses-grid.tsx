@@ -1,18 +1,20 @@
 "use client";
 
-import { BookOpen, Pencil, Users } from "lucide-react";
+import { BookOpen, Pencil, Trash2, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { toast } from "sonner";
 
 import { EmptyState } from "@/components/layout/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCourses } from "@/hooks/useCourses";
+import { useCourses, useDeleteCourse } from "@/hooks/useCourses";
 
 export function InstructorCoursesGrid({ instructorId }: { instructorId: string }) {
   const { data, isLoading } = useCourses({ instructorId });
+  const deleteCourse = useDeleteCourse();
 
   if (isLoading) {
     return (
@@ -78,11 +80,34 @@ export function InstructorCoursesGrid({ instructorId }: { instructorId: string }
                 </h3>
               </Link>
 
-              <Button asChild size="icon" variant="ghost" className="-mr-2 -mt-1 h-8 w-8">
-                <Link href={`/instructor/courses/${c.id}`} aria-label="Chỉnh sửa khóa học">
-                  <Pencil className="h-4 w-4" />
-                </Link>
-              </Button>
+              <div className="-mr-2 -mt-1 flex items-center">
+                <Button asChild size="icon" variant="ghost" className="h-8 w-8">
+                  <Link href={`/instructor/courses/${c.id}`} aria-label="Chỉnh sửa khóa học">
+                    <Pencil className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  aria-label="Xóa khóa học"
+                  disabled={deleteCourse.isPending}
+                  onClick={() => {
+                    const msg = c.is_published
+                      ? `Khóa học đang xuất bản. Xóa sẽ mất toàn bộ bài học/đề thi liên quan. Bạn chắc chắn muốn xóa "${c.title}"?`
+                      : `Xóa khóa học "${c.title}"?`;
+                    if (!confirm(msg)) return;
+                    deleteCourse.mutate(c.id, {
+                      onSuccess: () => toast.success("Đã xóa khóa học"),
+                      onError: (e) =>
+                        toast.error(e instanceof Error ? e.message : "Xóa thất bại"),
+                    });
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
             </div>
 
             {c.description ? (

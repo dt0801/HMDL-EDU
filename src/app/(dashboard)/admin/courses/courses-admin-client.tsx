@@ -1,6 +1,7 @@
 "use client";
 
-import { Library } from "lucide-react";
+import { Library, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
@@ -15,12 +16,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useCourses, useToggleCoursePublish } from "@/hooks/useCourses";
+import { useCourses, useDeleteCourse, useToggleCoursePublish } from "@/hooks/useCourses";
 import { formatDate } from "@/lib/utils";
 
 export function CoursesAdminClient() {
   const { data: courses, isLoading } = useCourses();
   const toggle = useToggleCoursePublish();
+  const deleteCourse = useDeleteCourse();
 
   return (
     <>
@@ -70,14 +72,35 @@ export function CoursesAdminClient() {
                       {formatDate(c.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant={c.is_published ? "outline" : "default"}
-                        onClick={() => toggle.mutate({ id: c.id, is_published: !c.is_published })}
-                        disabled={toggle.isPending}
-                      >
-                        {c.is_published ? "Hủy xuất bản" : "Xuất bản"}
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant={c.is_published ? "outline" : "default"}
+                          onClick={() => toggle.mutate({ id: c.id, is_published: !c.is_published })}
+                          disabled={toggle.isPending || deleteCourse.isPending}
+                        >
+                          {c.is_published ? "Hủy xuất bản" : "Xuất bản"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={toggle.isPending || deleteCourse.isPending}
+                          onClick={() => {
+                            const msg = c.is_published
+                              ? `Khóa học đang xuất bản. Xóa sẽ mất toàn bộ bài học/đề thi liên quan. Bạn chắc chắn muốn xóa "${c.title}"?`
+                              : `Xóa khóa học "${c.title}"?`;
+                            if (!confirm(msg)) return;
+                            deleteCourse.mutate(c.id, {
+                              onSuccess: () => toast.success("Đã xóa khóa học"),
+                              onError: (e) =>
+                                toast.error(e instanceof Error ? e.message : "Xóa thất bại"),
+                            });
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4 text-destructive" />
+                          Xóa
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useUiStore } from "@/stores/ui.store";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types/database.types";
@@ -54,20 +55,53 @@ export function Sidebar({ role }: { role: UserRole }) {
                 const Icon = item.icon;
                 return (
                   <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                        collapsed && "justify-center px-2"
-                      )}
-                      title={collapsed ? item.label : undefined}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span className="truncate">{item.label}</span>}
-                    </Link>
+                    {item.disabled ? (
+                      <div
+                        className={cn(
+                          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground/70",
+                          "cursor-not-allowed opacity-70",
+                          collapsed && "justify-center px-2"
+                        )}
+                        title={collapsed ? item.label : undefined}
+                        aria-disabled="true"
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {!collapsed ? (
+                          <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                            <span className="truncate">{item.label}</span>
+                            {item.badge ? (
+                              <Badge variant="secondary" className="shrink-0">
+                                {item.badge}
+                              </Badge>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                          isActive
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                          collapsed && "justify-center px-2"
+                        )}
+                        title={collapsed ? item.label : undefined}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {!collapsed ? (
+                          <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                            <span className="truncate">{item.label}</span>
+                            {item.badge ? (
+                              <Badge variant="secondary" className="shrink-0">
+                                {item.badge}
+                              </Badge>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </Link>
+                    )}
                   </li>
                 );
               })}
@@ -75,6 +109,25 @@ export function Sidebar({ role }: { role: UserRole }) {
           </div>
         ))}
       </nav>
+
+      {role === "admin" && !collapsed ? (
+        <div className="border-t p-3">
+          <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Chế độ xem
+          </p>
+          <div className="grid gap-2">
+            <Button asChild variant="outline" size="sm" className="justify-start">
+              <Link href="/admin/users">Admin</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="justify-start">
+              <Link href="/instructor/courses">Xem như giảng viên</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="justify-start">
+              <Link href="/student/dashboard">Xem như học viên</Link>
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </aside>
   );
 }

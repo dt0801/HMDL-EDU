@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useUiStore } from "@/stores/ui.store";
 import { cn } from "@/lib/utils";
@@ -43,19 +44,38 @@ export function MobileNav({ role }: { role: UserRole }) {
                   const Icon = item.icon;
                   return (
                     <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        onClick={() => setOpen(false)}
-                        className={cn(
-                          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                          isActive
-                            ? "bg-primary/10 text-primary"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                        )}
-                      >
-                        <Icon className="h-4 w-4" />
-                        {item.label}
-                      </Link>
+                      {item.disabled ? (
+                        <div
+                          className={cn(
+                            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium",
+                            "cursor-not-allowed text-muted-foreground/70 opacity-70"
+                          )}
+                          aria-disabled="true"
+                        >
+                          <Icon className="h-4 w-4" />
+                          <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                            <span className="truncate">{item.label}</span>
+                            {item.badge ? <Badge variant="secondary">{item.badge}</Badge> : null}
+                          </div>
+                        </div>
+                      ) : (
+                        <Link
+                          href={item.href}
+                          onClick={() => setOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                            isActive
+                              ? "bg-primary/10 text-primary"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          )}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                            <span className="truncate">{item.label}</span>
+                            {item.badge ? <Badge variant="secondary">{item.badge}</Badge> : null}
+                          </div>
+                        </Link>
+                      )}
                     </li>
                   );
                 })}
@@ -63,6 +83,25 @@ export function MobileNav({ role }: { role: UserRole }) {
             </div>
           ))}
         </nav>
+
+        {role === "admin" ? (
+          <div className="border-t p-3">
+            <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Chế độ xem
+            </p>
+            <div className="grid gap-2">
+              <Button asChild variant="outline" size="sm" className="justify-start" onClick={() => setOpen(false)}>
+                <Link href="/admin/users">Admin</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm" className="justify-start" onClick={() => setOpen(false)}>
+                <Link href="/instructor/courses">Xem như giảng viên</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm" className="justify-start" onClick={() => setOpen(false)}>
+                <Link href="/student/dashboard">Xem như học viên</Link>
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </SheetContent>
     </Sheet>
   );
