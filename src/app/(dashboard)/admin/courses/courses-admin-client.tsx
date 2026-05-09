@@ -1,6 +1,7 @@
 "use client";
 
-import { Library, Trash2 } from "lucide-react";
+import { Library, Loader2, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/layout/empty-state";
@@ -23,6 +24,7 @@ export function CoursesAdminClient() {
   const { data: courses, isLoading } = useCourses();
   const toggle = useToggleCoursePublish();
   const deleteCourse = useDeleteCourse();
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   return (
     <>
@@ -76,28 +78,43 @@ export function CoursesAdminClient() {
                         <Button
                           size="sm"
                           variant={c.is_published ? "outline" : "default"}
-                          onClick={() => toggle.mutate({ id: c.id, is_published: !c.is_published })}
-                          disabled={toggle.isPending || deleteCourse.isPending}
+                          onClick={() => {
+                            setBusyId(c.id);
+                            toggle.mutate(
+                              { id: c.id, is_published: !c.is_published },
+                              { onSettled: () => setBusyId(null) }
+                            );
+                          }}
+                          disabled={(toggle.isPending && busyId === c.id) || deleteCourse.isPending}
                         >
+                          {toggle.isPending && busyId === c.id ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : null}
                           {c.is_published ? "Hủy xuất bản" : "Xuất bản"}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={toggle.isPending || deleteCourse.isPending}
+                          disabled={toggle.isPending || (deleteCourse.isPending && busyId === c.id)}
                           onClick={() => {
                             const msg = c.is_published
                               ? `Khóa học đang xuất bản. Xóa sẽ mất toàn bộ bài học/đề thi liên quan. Bạn chắc chắn muốn xóa "${c.title}"?`
                               : `Xóa khóa học "${c.title}"?`;
                             if (!confirm(msg)) return;
+                            setBusyId(c.id);
                             deleteCourse.mutate(c.id, {
                               onSuccess: () => toast.success("Đã xóa khóa học"),
                               onError: (e) =>
                                 toast.error(e instanceof Error ? e.message : "Xóa thất bại"),
+                              onSettled: () => setBusyId(null),
                             });
                           }}
                         >
-                          <Trash2 className="mr-2 h-4 w-4 text-destructive" />
+                          {deleteCourse.isPending && busyId === c.id ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="mr-2 h-4 w-4 text-destructive" />
+                          )}
                           Xóa
                         </Button>
                       </div>

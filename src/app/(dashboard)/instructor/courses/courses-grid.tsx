@@ -1,8 +1,9 @@
 "use client";
 
-import { BookOpen, Pencil, Trash2, Users } from "lucide-react";
+import { BookOpen, Loader2, Pencil, Trash2, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/layout/empty-state";
@@ -15,6 +16,7 @@ import { useCourses, useDeleteCourse } from "@/hooks/useCourses";
 export function InstructorCoursesGrid({ instructorId }: { instructorId: string }) {
   const { data, isLoading } = useCourses({ instructorId });
   const deleteCourse = useDeleteCourse();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -92,20 +94,26 @@ export function InstructorCoursesGrid({ instructorId }: { instructorId: string }
                   variant="ghost"
                   className="h-8 w-8"
                   aria-label="Xóa khóa học"
-                  disabled={deleteCourse.isPending}
+                  disabled={deleteCourse.isPending && deletingId === c.id}
                   onClick={() => {
                     const msg = c.is_published
                       ? `Khóa học đang xuất bản. Xóa sẽ mất toàn bộ bài học/đề thi liên quan. Bạn chắc chắn muốn xóa "${c.title}"?`
                       : `Xóa khóa học "${c.title}"?`;
                     if (!confirm(msg)) return;
+                    setDeletingId(c.id);
                     deleteCourse.mutate(c.id, {
                       onSuccess: () => toast.success("Đã xóa khóa học"),
                       onError: (e) =>
                         toast.error(e instanceof Error ? e.message : "Xóa thất bại"),
+                      onSettled: () => setDeletingId(null),
                     });
                   }}
                 >
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                  {deleteCourse.isPending && deletingId === c.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  )}
                 </Button>
               </div>
             </div>

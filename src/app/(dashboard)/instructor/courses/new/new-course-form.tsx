@@ -74,8 +74,8 @@ export function NewCourseForm({ instructorId }: { instructorId: string }) {
   const thumbnailUrl = watch("thumbnail_url");
   const requiresEnrollment = watch("requires_enrollment");
 
-  const { data: lessons } = useLessons(courseId ?? undefined);
-  const { data: exams } = useExamsByCourse(courseId ?? undefined);
+  const { data: lessons, isLoading: lessonsLoading } = useLessons(courseId ?? undefined);
+  const { data: exams, isLoading: examsLoading } = useExamsByCourse(courseId ?? undefined);
 
   useEffect(() => {
     setThumbnailPreview(null);
@@ -124,6 +124,7 @@ export function NewCourseForm({ instructorId }: { instructorId: string }) {
   };
 
   const saving = createCourse.isPending || updateCourse.isPending;
+  const [action, setAction] = useState<"draft" | "publish" | null>(null);
 
   const draftChecks = useMemo(() => {
     const hasTitle = (title ?? "").trim().length >= 5;
@@ -178,15 +179,19 @@ export function NewCourseForm({ instructorId }: { instructorId: string }) {
 
   const onSaveDraft = handleSubmit(async (data) => {
     try {
+      setAction("draft");
       await persistDraft(data);
       toast.success(courseId ? "Đã lưu nháp" : "Đã tạo bản nháp khóa học");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Không lưu được");
+    } finally {
+      setAction(null);
     }
   });
 
   const onPublish = handleSubmit(async (data) => {
     try {
+      setAction("publish");
       if (!courseId) {
         toast.error("Vui lòng lưu nháp trước, sau đó thêm bài học rồi mới xuất bản.");
         setTab("basic");
@@ -206,6 +211,8 @@ export function NewCourseForm({ instructorId }: { instructorId: string }) {
       router.push(`/instructor/courses/${courseId}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Không xuất bản được");
+    } finally {
+      setAction(null);
     }
   });
 
@@ -227,12 +234,17 @@ export function NewCourseForm({ instructorId }: { instructorId: string }) {
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Button type="button" variant="outline" disabled={saving || thumbnailUploading} onClick={() => void onSaveDraft()}>
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          <Button
+            type="button"
+            variant="outline"
+            disabled={saving || thumbnailUploading}
+            onClick={() => void onSaveDraft()}
+          >
+            {saving && action === "draft" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Lưu nháp
           </Button>
           <Button type="button" disabled={saving || thumbnailUploading} onClick={() => void onPublish()}>
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {saving && action === "publish" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Xuất bản
           </Button>
         </div>
@@ -355,7 +367,14 @@ export function NewCourseForm({ instructorId }: { instructorId: string }) {
                   </CardContent>
                 </Card>
               ) : (
-                <LessonsTab courseId={courseId} />
+                <>
+                  {lessonsLoading ? (
+                    <Card>
+                      <CardContent className="p-6 text-sm text-muted-foreground">Đang tải bài học...</CardContent>
+                    </Card>
+                  ) : null}
+                  <LessonsTab courseId={courseId} />
+                </>
               )}
             </TabsContent>
 
@@ -368,6 +387,11 @@ export function NewCourseForm({ instructorId }: { instructorId: string }) {
                 </Card>
               ) : (
                 <>
+                  {examsLoading ? (
+                    <Card>
+                      <CardContent className="p-6 text-sm text-muted-foreground">Đang tải đề thi...</CardContent>
+                    </Card>
+                  ) : null}
                   <ExamsTab courseId={courseId} />
                   <Card>
                     <CardHeader className="pb-3">
