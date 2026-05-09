@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, ClipboardList, FileText, Video } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -14,10 +15,13 @@ import { useCourse } from "@/hooks/useCourses";
 import { useCourseProgress, useUpsertProgress } from "@/hooks/useLessonProgress";
 import { useExamsByCourse } from "@/hooks/useExams";
 import { useLessons } from "@/hooks/useLessons";
+import { resolveLessonContentUrl } from "@/lib/storage";
+import { createClient } from "@/lib/supabase/client";
 import { cn, formatDuration } from "@/lib/utils";
 import type { Lesson } from "@/types/database.types";
 
 export function LearnClient({ courseId, studentId }: { courseId: string; studentId: string }) {
+  const supabase = useMemo(() => createClient(), []);
   const { data: course } = useCourse(courseId);
   const { data: lessons, isLoading: lLoading } = useLessons(courseId);
   const { data: progress } = useCourseProgress(studentId, courseId);
@@ -38,6 +42,13 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
   useEffect(() => {
     if (!currentId && publishedLessons[0]) setCurrentId(publishedLessons[0].id);
   }, [currentId, publishedLessons]);
+
+  const { data: resolvedSrc, isFetching: srcLoading } = useQuery({
+    queryKey: ["lesson-content-url", current?.id, current?.content_url],
+    enabled: !!current?.content_url,
+    staleTime: 50 * 60 * 1000,
+    queryFn: () => resolveLessonContentUrl(supabase, current?.content_url ?? null),
+  });
 
   const progressMap = useMemo(() => {
     const m = new Map<string, { watched: number; completed: boolean }>();
@@ -101,19 +112,29 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
             </Card>
           ) : current.type === "video" && current.content_url ? (
             <div className="space-y-3">
-              <VideoPlayer
-                src={current.content_url}
-                initialSeconds={progressMap.get(current.id)?.watched ?? 0}
-                onProgress={(s) =>
-                  upsertProgress.mutate({
-                    student_id: studentId,
-                    lesson_id: current.id,
-                    watched_seconds: s,
-                    is_completed: false,
-                  })
-                }
-                onEnded={() => markComplete(current)}
-              />
+              {srcLoading && !resolvedSrc ? (
+                <Skeleton className="aspect-video w-full rounded-lg" />
+              ) : resolvedSrc ? (
+                <VideoPlayer
+                  src={resolvedSrc}
+                  initialSeconds={progressMap.get(current.id)?.watched ?? 0}
+                  onProgress={(s) =>
+                    upsertProgress.mutate({
+                      student_id: studentId,
+                      lesson_id: current.id,
+                      watched_seconds: s,
+                      is_completed: false,
+                    })
+                  }
+                  onEnded={() => markComplete(current)}
+                />
+              ) : (
+                <Card>
+                  <CardContent className="p-6 text-sm text-muted-foreground">
+                    Không tải được video. Vui lòng thử lại sau.
+                  </CardContent>
+                </Card>
+              )}
               <div>
                 <h2 className="text-lg font-semibold">{current.title}</h2>
                 {current.description ? (
@@ -123,11 +144,21 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
             </div>
           ) : current.type === "document" && current.content_url ? (
             <div className="space-y-3">
-              <iframe
-                src={current.content_url}
-                className="aspect-[4/5] w-full rounded-lg border"
-                title={current.title}
-              />
+              {srcLoading && !resolvedSrc ? (
+                <Skeleton className="aspect-[4/5] w-full rounded-lg" />
+              ) : resolvedSrc ? (
+                <iframe
+                  src={resolvedSrc}
+                  className="aspect-[4/5] w-full rounded-lg border"
+                  title={current.title}
+                />
+              ) : (
+                <Card>
+                  <CardContent className="p-6 text-sm text-muted-foreground">
+                    Không tải được tài liệu. Vui lòng thử lại sau.
+                  </CardContent>
+                </Card>
+              )}
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-semibold">{current.title}</h2>

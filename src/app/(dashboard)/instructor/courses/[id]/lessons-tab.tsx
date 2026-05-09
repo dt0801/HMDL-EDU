@@ -232,6 +232,7 @@ export function LessonsTab({ courseId }: { courseId: string }) {
           if (!o) setEditing(null);
         }}
         lesson={editing}
+        courseId={courseId}
         onSubmit={handleSubmit}
         isSubmitting={createLesson.isPending || updateLesson.isPending}
       />
