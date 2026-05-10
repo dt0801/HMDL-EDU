@@ -19,17 +19,26 @@ export default async function NewExamPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: courses } = await supabase
-    .from("courses")
-    .select("id, title")
-    .eq("instructor_id", user.id)
-    .order("created_at", { ascending: false });
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  const isAdmin = profile?.role === "admin";
+
+  let coursesQuery = supabase.from("courses").select("id, title").order("created_at", {
+    ascending: false,
+  });
+  if (!isAdmin) {
+    coursesQuery = coursesQuery.eq("instructor_id", user.id);
+  }
+  const { data: courses } = await coursesQuery;
 
   return (
     <>
       <PageHeader
         title="Tạo đề thi mới"
-        description="Tạo thông tin đề thi, thêm câu hỏi thủ công hoặc upload từ file."
+        description="Tạo đề trắc nghiệm, thêm câu hỏi thủ công hoặc upload từ file."
       />
       <Card>
         <CardContent className="p-4 sm:p-6">

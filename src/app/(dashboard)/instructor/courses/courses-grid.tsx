@@ -13,7 +13,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCourses, useDeleteCourse } from "@/hooks/useCourses";
 
-export function InstructorCoursesGrid({ instructorId }: { instructorId: string }) {
+export function InstructorCoursesGrid({
+  instructorId,
+  isAdmin = false,
+}: {
+  instructorId?: string;
+  isAdmin?: boolean;
+}) {
   const { data, isLoading } = useCourses({ instructorId });
   const deleteCourse = useDeleteCourse();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -32,13 +38,15 @@ export function InstructorCoursesGrid({ instructorId }: { instructorId: string }
     return (
       <EmptyState
         icon={BookOpen}
-        title="Bạn chưa có khóa học nào"
-        description="Bắt đầu bằng cách tạo khóa học đầu tiên của bạn."
+        title={isAdmin ? "Chưa có khóa học nào" : "Bạn chưa có khóa học nào"}
+        description={
+          isAdmin
+            ? "Tạo khóa học đầu tiên để bắt đầu thêm bài học và đề thi trắc nghiệm."
+            : "Bắt đầu bằng cách tạo khóa học đầu tiên của bạn."
+        }
         action={
           <Button asChild>
-            <Link href="/instructor/courses/new">
-              Tạo khóa học
-            </Link>
+            <Link href="/instructor/courses/new">Tạo khóa học</Link>
           </Button>
         }
       />

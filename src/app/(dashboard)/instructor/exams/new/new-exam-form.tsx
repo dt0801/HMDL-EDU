@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Download, FileUp, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Download, FileUp, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
@@ -100,6 +100,7 @@ export function NewExamForm({
   const validDraftCount = useMemo(() => {
     return draftQuestions.filter((q) => questionSchema.safeParse(q).success).length;
   }, [draftQuestions]);
+  const hasCourses = courses.length > 0;
 
   const primarySubmitLabel = useMemo(() => {
     if (!hasValidQuestions) return "Lưu nháp";
@@ -266,6 +267,21 @@ export function NewExamForm({
 
   return (
     <>
+      {!hasCourses ? (
+        <EmptyState
+          icon={BookOpen}
+          title="Chưa có khóa học để gắn đề thi"
+          description="Hãy tạo hoặc chọn ít nhất một khóa học trước khi tạo đề trắc nghiệm."
+          action={
+            <Button asChild>
+              <Link href="/instructor/courses">
+                <BookOpen className="mr-1 h-4 w-4" /> Mở danh sách khóa học
+              </Link>
+            </Button>
+          }
+        />
+      ) : null}
+
       {courseId ? (
         <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2">
           <Link href={`/instructor/courses/${courseId}`}>
@@ -305,7 +321,7 @@ export function NewExamForm({
                   <div className="space-y-2">
                     <Label>Khóa học *</Label>
                     <Select value={courseId} onValueChange={setCourseId}>
-                      <SelectTrigger>
+                      <SelectTrigger disabled={!hasCourses}>
                         <SelectValue placeholder="Chọn khóa học" />
                       </SelectTrigger>
                       <SelectContent>
@@ -316,6 +332,11 @@ export function NewExamForm({
                         ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {hasCourses
+                        ? "Đề thi sẽ gắn vào khóa học đã chọn và hiển thị cho học viên của khóa đó."
+                        : "Hiện chưa có khóa học nào khả dụng để tạo đề thi."}
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -695,7 +716,10 @@ export function NewExamForm({
                 <span>Chưa có câu hỏi hợp lệ. Bạn có thể lưu nháp để bổ sung sau.</span>
               )}
             </div>
-            <Button type="submit" disabled={createExam.isPending || saveQuestion.isPending}>
+            <Button
+              type="submit"
+              disabled={!hasCourses || createExam.isPending || saveQuestion.isPending}
+            >
               {createExam.isPending || saveQuestion.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}

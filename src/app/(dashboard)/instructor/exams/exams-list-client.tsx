@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Plus, Upload } from "lucide-react";
 import Link from "next/link";
 
 import { EmptyState } from "@/components/layout/empty-state";
@@ -27,7 +27,23 @@ export function ExamsListClient() {
     <>
       <PageHeader
         title="Đề thi"
-        description="Tất cả đề thi gắn với các khóa học bạn phụ trách."
+        description="Tạo và quản lý đề thi trắc nghiệm cho các khóa học bạn có quyền truy cập."
+        actions={
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <Link href="/instructor/exams/new?mode=upload">
+                <Upload className="mr-2 h-4 w-4" />
+                Upload đề thi
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/instructor/exams/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Tạo đề thi
+              </Link>
+            </Button>
+          </div>
+        }
       />
 
       <Card>
@@ -38,7 +54,23 @@ export function ExamsListClient() {
             <EmptyState
               icon={ClipboardList}
               title="Chưa có đề thi"
-              description="Vào chi tiết một khóa học và tạo đề thi từ tab Đề thi."
+              description="Bạn có thể tạo đề thi trắc nghiệm mới hoặc upload danh sách câu hỏi từ file."
+              action={
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+                  <Button asChild>
+                    <Link href="/instructor/exams/new">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Tạo đề thi
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href="/instructor/exams/new?mode=upload">
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload đề thi
+                    </Link>
+                  </Button>
+                </div>
+              }
             />
           ) : (
             <Table>
@@ -57,9 +89,7 @@ export function ExamsListClient() {
                 {data.map((e) => (
                   <TableRow key={e.id}>
                     <TableCell className="font-medium">{e.title}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {e.course?.title ?? "—"}
-                    </TableCell>
+                    <TableCell className="text-muted-foreground">{e.course?.title ?? "—"}</TableCell>
                     <TableCell>{e.duration_minutes} phút</TableCell>
                     <TableCell>{e.passing_score}%</TableCell>
                     <TableCell>
