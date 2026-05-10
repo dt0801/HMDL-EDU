@@ -16,13 +16,14 @@ const ROLE_HOME: Record<UserRole, string> = {
   student: "/student/dashboard",
 };
 
+const SHOW_DEMO_ACCOUNTS = process.env.NODE_ENV !== "production";
+
 export default async function LoginPage() {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Nếu đã đăng nhập thì điều hướng luôn (không phụ thuộc middleware).
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -41,17 +42,19 @@ export default async function LoginPage() {
           Sử dụng email nội bộ bệnh viện để truy cập hệ thống đào tạo.
         </p>
       </div>
+
       <Suspense>
         <LoginForm />
       </Suspense>
-      <div className="rounded-lg border bg-muted/40 p-4 text-xs text-muted-foreground">
-        <p className="font-medium text-foreground">Tài khoản demo (mật khẩu: HMDL@2026)</p>
-        <ul className="mt-2 space-y-1">
-          <li>admin@hmdl.vn — Quản trị viên</li>
-          <li>bs.minh@hmdl.vn — Giảng viên</li>
-          <li>dd.lan@hmdl.vn — Học viên</li>
-        </ul>
-      </div>
+
+      {SHOW_DEMO_ACCOUNTS ? (
+        <div className="rounded-lg border bg-muted/40 p-4 text-xs text-muted-foreground">
+          <p className="font-medium text-foreground">Tài khoản demo (mật khẩu: HMDL@2026)</p>
+          <ul className="mt-2 space-y-1">
+            <li>admin@hmdl.vn - Quản trị viên</li>
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }

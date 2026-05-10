@@ -1,9 +1,9 @@
 "use client";
 
 import { Bell, BookOpen, GraduationCap } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 
 import { CourseCard } from "@/components/courses/course-card";
 import { EmptyState } from "@/components/layout/empty-state";
@@ -14,38 +14,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { createClient } from "@/lib/supabase/client";
 import { useMyEnrollments } from "@/hooks/useEnrollments";
-import { useCourseProgress } from "@/hooks/useLessonProgress";
-import { useLessons } from "@/hooks/useLessons";
+import {
+  type CourseProgressSummary,
+  useCourseProgressSummaries,
+} from "@/hooks/useLessonProgress";
 import { useCourses } from "@/hooks/useCourses";
+import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/utils";
 import type { Notification } from "@/types/database.types";
 
 function InProgressCourse({
-  studentId,
   course,
+  progressSummary,
 }: {
-  studentId: string;
   course: { id: string; title: string; thumbnail_url: string | null; category: string | null };
+  progressSummary?: CourseProgressSummary;
 }) {
-  const { data: lessons } = useLessons(course.id);
-  const { data: progress } = useCourseProgress(studentId, course.id);
-
-  const publishedLessons = useMemo(
-    () => (lessons ?? []).filter((l) => l.is_published),
-    [lessons]
-  );
-
-  const progressMap = useMemo(() => {
-    const m = new Map<string, boolean>();
-    for (const p of progress ?? []) m.set(p.lesson_id, p.is_completed);
-    return m;
-  }, [progress]);
-
-  const completedCount = publishedLessons.filter((l) => progressMap.get(l.id)).length;
-  const percent =
-    publishedLessons.length === 0 ? 0 : Math.round((completedCount / publishedLessons.length) * 100);
+  const completedCount = progressSummary?.completedLessons ?? 0;
+  const publishedCount = progressSummary?.publishedLessons ?? 0;
+  const percent = progressSummary?.percent ?? 0;
 
   return (
     <Card className="overflow-hidden">
@@ -66,7 +54,7 @@ function InProgressCourse({
         <div className="mt-3 space-y-1">
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>
-              {completedCount}/{publishedLessons.length} bài
+              {completedCount}/{publishedCount} bài
             </span>
             <span className="font-medium">{percent}%</span>
           </div>
@@ -78,12 +66,13 @@ function InProgressCourse({
 }
 
 export function StudentDashboardClient({ studentId }: { studentId: string }) {
-  const { data: enrollments, isLoading: eLoading } = useMyEnrollments(studentId);
+  const { data: enrollments, isLoading: enrollmentsLoading } = useMyEnrollments(studentId);
   const { data: courses } = useCourses();
   const supabase = useMemo(() => createClient(), []);
 
-  const { data: notifications, isLoading: nLoading } = useQuery<Notification[]>({
+  const { data: notifications, isLoading: notificationsLoading } = useQuery<Notification[]>({
     queryKey: ["my-notifications", studentId],
+    enabled: !!studentId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("notifications")
@@ -96,22 +85,33 @@ export function StudentDashboardClient({ studentId }: { studentId: string }) {
     },
   });
 
-  const inProgress = (enrollments ?? []).filter((e) => e.status === "active");
-  const completed = (enrollments ?? []).filter((e) => e.status === "completed");
-  const enrolledIds = useMemo(() => new Set((enrollments ?? []).map((e) => e.course_id)), [enrollments]);
+  const inProgress = useMemo(
+    () => (enrollments ?? []).filter((enrollment) => enrollment.status === "active"),
+    [enrollments]
+  );
+  const completed = useMemo(
+    () => (enrollments ?? []).filter((enrollment) => enrollment.status === "completed"),
+    [enrollments]
+  );
+  const inProgressCourseIds = useMemo(
+    () => inProgress.map((enrollment) => enrollment.course_id),
+    [inProgress]
+  );
+  const { data: progressSummaries } = useCourseProgressSummaries(studentId, inProgressCourseIds);
+  const enrolledIds = useMemo(
+    () => new Set((enrollments ?? []).map((enrollment) => enrollment.course_id)),
+    [enrollments]
+  );
   const suggested = useMemo(() => {
     return (courses ?? [])
-      .filter((c) => c.is_published)
-      .filter((c) => !enrolledIds.has(c.id))
+      .filter((course) => course.is_published)
+      .filter((course) => !enrolledIds.has(course.id))
       .slice(0, 3);
   }, [courses, enrolledIds]);
 
   return (
     <>
-      <PageHeader
-        title="Xin chào"
-        description="Tổng quan các khóa học và chứng chỉ của bạn."
-      />
+      <PageHeader title="Xin chào" description="Tổng quan các khóa học và chứng chỉ của bạn." />
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -120,7 +120,7 @@ export function StudentDashboardClient({ studentId }: { studentId: string }) {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {eLoading ? (
+            {enrollmentsLoading ? (
               <Skeleton className="h-8 w-12" />
             ) : (
               <div className="text-2xl font-semibold">{inProgress.length}</div>
@@ -133,7 +133,7 @@ export function StudentDashboardClient({ studentId }: { studentId: string }) {
             <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {eLoading ? (
+            {enrollmentsLoading ? (
               <Skeleton className="h-8 w-12" />
             ) : (
               <div className="text-2xl font-semibold">{completed.length}</div>
@@ -146,7 +146,7 @@ export function StudentDashboardClient({ studentId }: { studentId: string }) {
             <Bell className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {nLoading ? (
+            {notificationsLoading ? (
               <Skeleton className="h-8 w-12" />
             ) : (
               <div className="text-2xl font-semibold">{notifications?.length ?? 0}</div>
@@ -163,7 +163,7 @@ export function StudentDashboardClient({ studentId }: { studentId: string }) {
           </Button>
         </div>
 
-        {eLoading ? (
+        {enrollmentsLoading ? (
           <Skeleton className="h-40 w-full" />
         ) : inProgress.length === 0 ? (
           <EmptyState
@@ -178,9 +178,13 @@ export function StudentDashboardClient({ studentId }: { studentId: string }) {
           />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {inProgress.map((e) =>
-              e.course ? (
-                <InProgressCourse key={e.id} studentId={studentId} course={e.course} />
+            {inProgress.map((enrollment) =>
+              enrollment.course ? (
+                <InProgressCourse
+                  key={enrollment.id}
+                  course={enrollment.course}
+                  progressSummary={progressSummaries?.[enrollment.course.id]}
+                />
               ) : null
             )}
           </div>
@@ -203,18 +207,18 @@ export function StudentDashboardClient({ studentId }: { studentId: string }) {
           />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {suggested.map((c) => (
+            {suggested.map((course) => (
               <CourseCard
-                key={c.id}
+                key={course.id}
                 course={{
-                  id: c.id,
-                  title: c.title,
-                  description: c.description,
-                  thumbnail_url: c.thumbnail_url,
-                  category: c.category,
-                  is_published: c.is_published,
+                  id: course.id,
+                  title: course.title,
+                  description: course.description,
+                  thumbnail_url: course.thumbnail_url,
+                  category: course.category,
+                  is_published: course.is_published,
                 }}
-                href={`/student/courses`}
+                href="/student/courses"
                 footer={<Badge variant="secondary">Đề xuất</Badge>}
               />
             ))}
@@ -228,7 +232,7 @@ export function StudentDashboardClient({ studentId }: { studentId: string }) {
           <span className="text-sm text-muted-foreground">Mới nhất</span>
         </div>
 
-        {nLoading ? (
+        {notificationsLoading ? (
           <Skeleton className="h-40 w-full" />
         ) : !notifications || notifications.length === 0 ? (
           <EmptyState icon={Bell} title="Chưa có thông báo nào" />
@@ -236,19 +240,19 @@ export function StudentDashboardClient({ studentId }: { studentId: string }) {
           <Card>
             <CardContent className="p-4 sm:p-6">
               <ul className="space-y-3">
-                {notifications.map((n, idx) => (
-                  <li key={n.id}>
+                {notifications.map((notification, idx) => (
+                  <li key={notification.id}>
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{n.title}</p>
-                        {n.body ? (
+                        <p className="truncate text-sm font-medium">{notification.title}</p>
+                        {notification.body ? (
                           <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">
-                            {n.body}
+                            {notification.body}
                           </p>
                         ) : null}
                       </div>
                       <div className="shrink-0 text-xs text-muted-foreground">
-                        {formatDateTime(n.created_at)}
+                        {formatDateTime(notification.created_at)}
                       </div>
                     </div>
                     {idx < notifications.length - 1 ? <Separator className="mt-3" /> : null}

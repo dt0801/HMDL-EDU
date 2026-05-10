@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell, LogOut, User } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 import { signOutAction } from "@/app/(auth)/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,16 +16,32 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getInitials, roleLabel } from "@/lib/utils";
-import type { Profile } from "@/types/database.types";
+import type { Profile, UserRole } from "@/types/database.types";
 
 import { MobileNav } from "./mobile-nav";
 
 export function Header({ profile }: { profile: Profile }) {
+  const pathname = usePathname();
+  const viewingAs: UserRole | null = pathname.startsWith("/admin")
+    ? "admin"
+    : pathname.startsWith("/instructor")
+      ? "instructor"
+      : pathname.startsWith("/student")
+        ? "student"
+        : null;
+  const isPreviewMode = viewingAs != null && viewingAs !== profile.role;
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur lg:px-6">
       <MobileNav role={profile.role} />
 
-      <div className="flex-1" />
+      <div className="flex-1">
+        {isPreviewMode ? (
+          <Badge variant="secondary" className="hidden sm:inline-flex">
+            Đang xem như {roleLabel(viewingAs)}
+          </Badge>
+        ) : null}
+      </div>
 
       <Button variant="ghost" size="icon" aria-label="Thông báo">
         <Bell className="h-5 w-5" />

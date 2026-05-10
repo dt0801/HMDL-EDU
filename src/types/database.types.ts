@@ -347,6 +347,26 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      get_admin_report_summary: {
+        Args: Record<string, never>;
+        Returns: {
+          total_students: number;
+          total_courses: number;
+          published_courses: number;
+          total_enrollments: number;
+          completed_enrollments: number;
+          average_score: number;
+          certificates_issued: number;
+        }[];
+      };
+      get_top_courses: {
+        Args: { limit_count?: number };
+        Returns: {
+          course_id: string;
+          course_title: string;
+          enrollments_count: number;
+        }[];
+      };
       is_admin: { Args: Record<string, never>; Returns: boolean };
       is_instructor_or_admin: { Args: Record<string, never>; Returns: boolean };
       current_role: { Args: Record<string, never>; Returns: string };
