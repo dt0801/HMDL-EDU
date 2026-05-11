@@ -11,6 +11,11 @@ export type ExamWithCourse = Exam & {
   questions_count?: number;
 };
 
+export type StudentExamListItem = Exam & {
+  course: { id: string; title: string; category: string | null } | null;
+  questions: { count: number }[] | null;
+};
+
 export type QuestionWithAnswers = Question & { answers: Answer[] };
 
 export function useExamsByCourse(courseId: string | undefined) {
@@ -41,6 +46,23 @@ export function useAllExams() {
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as ExamWithCourse[];
+    },
+  });
+}
+
+export function useStudentExams(studentId: string | undefined) {
+  const supabase = createClient();
+  return useQuery<StudentExamListItem[]>({
+    queryKey: ["student-exams", studentId],
+    enabled: !!studentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("exams")
+        .select("*, course:courses(id, title, category), questions(count)")
+        .eq("is_published", true)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as StudentExamListItem[];
     },
   });
 }
