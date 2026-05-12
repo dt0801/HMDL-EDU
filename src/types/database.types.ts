@@ -10,6 +10,14 @@ export type UserRole = "admin" | "instructor" | "student";
 export type EnrollmentStatus = "active" | "completed" | "dropped";
 export type LessonType = "video" | "document" | "text";
 export type QuestionType = "mcq" | "multi" | "true_false";
+export type CourseDocumentAudience = "student" | "instructor" | "both";
+export type CourseDocumentKind =
+  | "procedure"
+  | "template"
+  | "slide"
+  | "reference"
+  | "policy"
+  | "other";
 
 type ProfileRow = {
   id: string;
@@ -135,6 +143,41 @@ type LessonProgressInsert = {
   watched_seconds?: number;
   is_completed?: boolean;
   last_watched_at?: string | null;
+};
+
+type CourseDocumentRow = {
+  id: string;
+  course_id: string;
+  lesson_id: string | null;
+  title: string;
+  description: string | null;
+  file_url: string;
+  file_name: string;
+  mime_type: string | null;
+  file_size_bytes: number | null;
+  audience: CourseDocumentAudience;
+  document_kind: CourseDocumentKind;
+  is_published: boolean;
+  uploaded_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+type CourseDocumentInsert = {
+  id?: string;
+  course_id: string;
+  lesson_id?: string | null;
+  title: string;
+  description?: string | null;
+  file_url: string;
+  file_name: string;
+  mime_type?: string | null;
+  file_size_bytes?: number | null;
+  audience?: CourseDocumentAudience;
+  document_kind?: CourseDocumentKind;
+  is_published?: boolean;
+  uploaded_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
 };
 
 type ExamRow = {
@@ -308,6 +351,12 @@ export type Database = {
         Update: Partial<LessonProgressInsert>;
         Relationships: Rel[];
       };
+      course_documents: {
+        Row: CourseDocumentRow;
+        Insert: CourseDocumentInsert;
+        Update: Partial<CourseDocumentInsert>;
+        Relationships: Rel[];
+      };
       exams: {
         Row: ExamRow;
         Insert: ExamInsert;
@@ -387,6 +436,7 @@ export type Course = CourseRow;
 export type Lesson = LessonRow;
 export type Enrollment = EnrollmentRow;
 export type LessonProgress = LessonProgressRow;
+export type CourseDocument = CourseDocumentRow;
 export type Exam = ExamRow;
 export type Question = QuestionRow;
 export type Answer = AnswerRow;

@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
+import { CourseForm } from "@/components/courses/course-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,12 +12,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCourse, useUpdateCourse } from "@/hooks/useCourses";
-import { CourseForm } from "@/components/courses/course-form";
 import type { CourseInput } from "@/lib/validations/course.schema";
 
+import { DocumentsTab } from "./documents-tab";
+import { ExamsTab } from "./exams-tab";
 import { LessonsTab } from "./lessons-tab";
 import { StudentsTab } from "./students-tab";
-import { ExamsTab } from "./exams-tab";
 
 export function CourseDetailClient({ courseId }: { courseId: string }) {
   const { data: course, isLoading } = useCourse(courseId);
@@ -41,7 +42,8 @@ export function CourseDetailClient({ courseId }: { courseId: string }) {
       { id: course.id, ...input },
       {
         onSuccess: () => toast.success("Đã cập nhật khóa học"),
-        onError: (e) => toast.error(e instanceof Error ? e.message : "Có lỗi xảy ra"),
+        onError: (error) =>
+          toast.error(error instanceof Error ? error.message : "Có lỗi xảy ra"),
       }
     );
   };
@@ -53,6 +55,7 @@ export function CourseDetailClient({ courseId }: { courseId: string }) {
           <ArrowLeft className="mr-1 h-4 w-4" /> Khóa học của tôi
         </Link>
       </Button>
+
       <PageHeader
         title={course.title}
         description={course.category ?? undefined}
@@ -69,6 +72,7 @@ export function CourseDetailClient({ courseId }: { courseId: string }) {
         <TabsList>
           <TabsTrigger value="info">Thông tin</TabsTrigger>
           <TabsTrigger value="lessons">Bài học</TabsTrigger>
+          <TabsTrigger value="documents">Tài liệu</TabsTrigger>
           <TabsTrigger value="exams">Đề thi</TabsTrigger>
           <TabsTrigger value="students">Học viên</TabsTrigger>
         </TabsList>
@@ -95,6 +99,10 @@ export function CourseDetailClient({ courseId }: { courseId: string }) {
 
         <TabsContent value="lessons">
           <LessonsTab courseId={course.id} />
+        </TabsContent>
+
+        <TabsContent value="documents">
+          <DocumentsTab courseId={course.id} />
         </TabsContent>
 
         <TabsContent value="exams">

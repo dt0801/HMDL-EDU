@@ -3,6 +3,7 @@ import {
   Award,
   BarChart3,
   Bell,
+  BookOpenText,
   Building2,
   ClipboardCheck,
   ClipboardList,
@@ -103,6 +104,7 @@ export const NAV_BY_ROLE: Record<UserRole, NavSection[]> = {
       title: "Giảng viên",
       items: [
         { href: "/instructor/courses", label: "Khóa học của tôi", icon: Library },
+        { href: "/instructor/documents", label: "Tài liệu", icon: BookOpenText },
         { href: "/instructor/exams", label: "Đề thi", icon: ClipboardList },
       ],
     },
@@ -113,6 +115,7 @@ export const NAV_BY_ROLE: Record<UserRole, NavSection[]> = {
       items: [
         { href: "/student/dashboard", label: "Trang chính", icon: LayoutDashboard },
         { href: "/student/courses", label: "Khám phá khóa học", icon: GraduationCap },
+        { href: "/student/documents", label: "Tài liệu", icon: BookOpenText },
         { href: "/student/exams", label: "Thi trắc nghiệm", icon: ClipboardList },
         { href: "/student/certificates", label: "Chứng chỉ", icon: Award },
       ],
