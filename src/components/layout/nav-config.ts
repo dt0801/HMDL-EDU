@@ -5,6 +5,7 @@ import {
   Bell,
   BookOpenText,
   Building2,
+  CalendarClock,
   ClipboardCheck,
   ClipboardList,
   GraduationCap,
@@ -104,6 +105,7 @@ export const NAV_BY_ROLE: Record<UserRole, NavSection[]> = {
       title: "Giảng viên",
       items: [
         { href: "/instructor/courses", label: "Khóa học của tôi", icon: Library },
+        { href: "/instructor/live-sessions", label: "Lớp học trực tuyến", icon: CalendarClock },
         { href: "/instructor/documents", label: "Tài liệu", icon: BookOpenText },
         { href: "/instructor/exams", label: "Đề thi", icon: ClipboardList },
       ],
@@ -115,6 +117,7 @@ export const NAV_BY_ROLE: Record<UserRole, NavSection[]> = {
       items: [
         { href: "/student/dashboard", label: "Trang chính", icon: LayoutDashboard },
         { href: "/student/courses", label: "Khám phá khóa học", icon: GraduationCap },
+        { href: "/student/live-sessions", label: "Lớp học trực tuyến", icon: CalendarClock },
         { href: "/student/documents", label: "Tài liệu", icon: BookOpenText },
         { href: "/student/exams", label: "Thi trắc nghiệm", icon: ClipboardList },
         { href: "/student/certificates", label: "Chứng chỉ", icon: Award },

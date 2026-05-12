@@ -10,6 +10,7 @@ export type UserRole = "admin" | "instructor" | "student";
 export type EnrollmentStatus = "active" | "completed" | "dropped";
 export type LessonType = "video" | "document" | "text";
 export type QuestionType = "mcq" | "multi" | "true_false";
+export type LiveSessionStatus = "scheduled" | "canceled";
 export type CourseDocumentAudience = "student" | "instructor" | "both";
 export type CourseDocumentKind =
   | "procedure"
@@ -143,6 +144,52 @@ type LessonProgressInsert = {
   watched_seconds?: number;
   is_completed?: boolean;
   last_watched_at?: string | null;
+};
+
+type LiveSessionRow = {
+  id: string;
+  course_id: string;
+  lesson_id: string | null;
+  title: string;
+  description: string | null;
+  scheduled_start_at: string;
+  duration_minutes: number;
+  timezone: string;
+  zoom_meeting_id: string;
+  zoom_join_url: string;
+  status: LiveSessionStatus;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+type LiveSessionInsert = {
+  id?: string;
+  course_id: string;
+  lesson_id?: string | null;
+  title: string;
+  description?: string | null;
+  scheduled_start_at: string;
+  duration_minutes?: number;
+  timezone?: string;
+  zoom_meeting_id: string;
+  zoom_join_url: string;
+  status?: LiveSessionStatus;
+  created_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+type LiveSessionSecretRow = {
+  session_id: string;
+  zoom_start_url: string;
+  created_at: string;
+  updated_at: string;
+};
+type LiveSessionSecretInsert = {
+  session_id: string;
+  zoom_start_url: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 type CourseDocumentRow = {
@@ -351,6 +398,18 @@ export type Database = {
         Update: Partial<LessonProgressInsert>;
         Relationships: Rel[];
       };
+      live_sessions: {
+        Row: LiveSessionRow;
+        Insert: LiveSessionInsert;
+        Update: Partial<LiveSessionInsert>;
+        Relationships: Rel[];
+      };
+      live_session_secrets: {
+        Row: LiveSessionSecretRow;
+        Insert: LiveSessionSecretInsert;
+        Update: Partial<LiveSessionSecretInsert>;
+        Relationships: Rel[];
+      };
       course_documents: {
         Row: CourseDocumentRow;
         Insert: CourseDocumentInsert;
@@ -436,6 +495,8 @@ export type Course = CourseRow;
 export type Lesson = LessonRow;
 export type Enrollment = EnrollmentRow;
 export type LessonProgress = LessonProgressRow;
+export type LiveSession = LiveSessionRow;
+export type LiveSessionSecret = LiveSessionSecretRow;
 export type CourseDocument = CourseDocumentRow;
 export type Exam = ExamRow;
 export type Question = QuestionRow;

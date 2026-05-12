@@ -16,6 +16,7 @@ import type { CourseInput } from "@/lib/validations/course.schema";
 
 import { DocumentsTab } from "./documents-tab";
 import { ExamsTab } from "./exams-tab";
+import { LiveSessionsTab } from "./live-sessions-tab";
 import { LessonsTab } from "./lessons-tab";
 import { StudentsTab } from "./students-tab";
 
@@ -72,6 +73,7 @@ export function CourseDetailClient({ courseId }: { courseId: string }) {
         <TabsList>
           <TabsTrigger value="info">Thông tin</TabsTrigger>
           <TabsTrigger value="lessons">Bài học</TabsTrigger>
+          <TabsTrigger value="live-sessions">Trực tuyến</TabsTrigger>
           <TabsTrigger value="documents">Tài liệu</TabsTrigger>
           <TabsTrigger value="exams">Đề thi</TabsTrigger>
           <TabsTrigger value="students">Học viên</TabsTrigger>
@@ -99,6 +101,10 @@ export function CourseDetailClient({ courseId }: { courseId: string }) {
 
         <TabsContent value="lessons">
           <LessonsTab courseId={course.id} />
+        </TabsContent>
+
+        <TabsContent value="live-sessions">
+          <LiveSessionsTab courseId={course.id} />
         </TabsContent>
 
         <TabsContent value="documents">

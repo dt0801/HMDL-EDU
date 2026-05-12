@@ -29,13 +29,14 @@ import {
 import { useExamsByCourse } from "@/hooks/useExams";
 import { useLessons } from "@/hooks/useLessons";
 import { useCourseProgress, useUpsertProgress } from "@/hooks/useLessonProgress";
+import { useStudentLiveSessions } from "@/hooks/useLiveSessions";
 import {
   isExternalUrl,
   resolveDocumentFileUrl,
   resolveLessonContentUrl,
 } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/client";
-import { cn, formatDuration } from "@/lib/utils";
+import { cn, formatDateTime, formatDuration } from "@/lib/utils";
 import type { Lesson } from "@/types/database.types";
 
 export function LearnClient({ courseId, studentId }: { courseId: string; studentId: string }) {
@@ -44,6 +45,7 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
   const { data: lessons, isLoading: lessonsLoading } = useLessons(courseId);
   const { data: progress } = useCourseProgress(studentId, courseId);
   const { data: exams } = useExamsByCourse(courseId);
+  const { data: liveSessions = [] } = useStudentLiveSessions(studentId, { courseId });
   const { data: documents = [] } = useCourseDocuments(courseId, {
     audience: "student",
     publishedOnly: true,
@@ -70,6 +72,14 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
   const courseLevelDocuments = useMemo(
     () => documents.filter((document) => document.lesson_id == null),
     [documents]
+  );
+  const currentLessonSessions = useMemo(
+    () => liveSessions.filter((session) => session.lesson_id === current?.id),
+    [current?.id, liveSessions]
+  );
+  const courseLevelSessions = useMemo(
+    () => liveSessions.filter((session) => session.lesson_id == null),
+    [liveSessions]
   );
 
   useEffect(() => {
@@ -179,6 +189,63 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
                     <Download className="mr-2 h-4 w-4" />
                   )}
                   {openingDocumentId === document.id ? "Đang mở..." : "Mở"}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderLiveSessionSection = (
+    title: string,
+    description: string,
+    items: typeof liveSessions
+  ) => {
+    if (items.length === 0) return null;
+
+    return (
+      <Card>
+        <CardContent className="space-y-4 p-4 sm:p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="font-semibold">{title}</h3>
+              <p className="text-sm text-muted-foreground">{description}</p>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/student/live-sessions">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Xem tất cả
+              </Link>
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            {items.map((session) => (
+              <div
+                key={session.id}
+                className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium">{session.title}</p>
+                    <Badge variant="secondary">Zoom</Badge>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <span>{formatDateTime(session.scheduled_start_at)}</span>
+                    <span>{session.duration_minutes} phút</span>
+                    {session.lesson?.title ? <span>{session.lesson.title}</span> : null}
+                  </div>
+                  {session.description ? (
+                    <p className="mt-1 text-sm text-muted-foreground">{session.description}</p>
+                  ) : null}
+                </div>
+                <Button asChild type="button" size="sm">
+                  <a href={session.zoom_join_url} target="_blank" rel="noreferrer">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Vào lớp Zoom
+                  </a>
                 </Button>
               </div>
             ))}
@@ -308,6 +375,18 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
             "Tài liệu chung của khóa học",
             "Biểu mẫu, quy trình và tài liệu tham khảo dùng cho toàn bộ khóa học.",
             courseLevelDocuments
+          )}
+
+          {renderLiveSessionSection(
+            "Buổi học của bài học này",
+            "Buổi Zoom được gắn trực tiếp với bài bạn đang xem.",
+            currentLessonSessions
+          )}
+
+          {renderLiveSessionSection(
+            "Buổi học chung của khóa học",
+            "Lịch Zoom áp dụng cho toàn bộ khóa học của bạn.",
+            courseLevelSessions
           )}
 
           {exams && exams.filter((exam) => exam.is_published).length > 0 ? (
