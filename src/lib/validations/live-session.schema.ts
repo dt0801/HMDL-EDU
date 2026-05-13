@@ -9,9 +9,7 @@ const optionalTrimmed = z
 export const liveSessionSchema = z.object({
   course_id: z.string().uuid("Khóa học không hợp lệ"),
   lesson_id: z
-    .string()
-    .trim()
-    .optional()
+    .preprocess((value) => (value === null ? undefined : value), z.string().trim().optional())
     .transform((value) => (value ? value : null))
     .refine((value) => value === null || z.string().uuid().safeParse(value).success, {
       message: "Bài học không hợp lệ",
