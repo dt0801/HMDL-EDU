@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { uploadCertificateAsset } from "@/lib/certificate/cloudinary";
+import { renderCertificateWithBrowserless } from "@/lib/certificate/server-render";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { formatDate } from "@/lib/utils";
+import type { Json } from "@/types/database.types";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const issueSchema = z.object({
   studentId: z.string().uuid(),
@@ -15,6 +20,69 @@ function makeCertificateCode() {
   const year = new Date().getFullYear();
   const suffix = crypto.randomUUID().slice(0, 8).toUpperCase();
   return `CERT-${year}-${suffix}`;
+}
+
+function shouldRenderServerSide() {
+  return process.env.CERTIFICATE_RENDER_MODE === "server";
+}
+
+type StudentRow = {
+  id: string;
+  full_name: string;
+};
+
+type CourseRow = {
+  id: string;
+  title: string;
+};
+
+type TemplateRow = {
+  id: string;
+  canvas_json: Json;
+  width: number;
+  height: number;
+};
+
+function buildVerifyUrl(request: Request, certificateCode: string) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
+  return `${baseUrl.replace(/\/$/, "")}/verify/${encodeURIComponent(certificateCode)}`;
+}
+
+async function renderAndUploadCertificate(input: {
+  template: TemplateRow;
+  student: StudentRow;
+  course: CourseRow;
+  certificateCode: string;
+  issuedAt: string;
+  verifyUrl: string;
+}) {
+  const rendered = await renderCertificateWithBrowserless({
+    templateJSON: input.template.canvas_json,
+    width: input.template.width,
+    height: input.template.height,
+    verifyUrl: input.verifyUrl,
+    data: {
+      studentName: input.student.full_name,
+      courseName: input.course.title,
+      issuedDate: formatDate(input.issuedAt),
+      certificateCode: input.certificateCode,
+    },
+  });
+
+  const [imageUrl, pdfUrl] = await Promise.all([
+    uploadCertificateAsset({
+      buffer: rendered.pngBuffer,
+      certificateCode: input.certificateCode,
+      kind: "png",
+    }),
+    uploadCertificateAsset({
+      buffer: rendered.pdfBuffer,
+      certificateCode: input.certificateCode,
+      kind: "pdf",
+    }),
+  ]);
+
+  return { imageUrl, pdfUrl };
 }
 
 async function requireAdmin() {
@@ -73,10 +141,14 @@ export async function POST(request: Request) {
   const service = createServiceClient();
 
   const [{ data: student }, { data: course }, { data: template }] = await Promise.all([
-    service.from("profiles").select("id").eq("id", input.studentId).eq("role", "student").maybeSingle(),
-    service.from("courses").select("id").eq("id", input.courseId).maybeSingle(),
+    service.from("profiles").select("id, full_name").eq("id", input.studentId).eq("role", "student").maybeSingle(),
+    service.from("courses").select("id, title").eq("id", input.courseId).maybeSingle(),
     input.templateId
-      ? service.from("certificate_templates").select("id").eq("id", input.templateId).maybeSingle()
+      ? service
+          .from("certificate_templates")
+          .select("id, canvas_json, width, height")
+          .eq("id", input.templateId)
+          .maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 
@@ -102,6 +174,26 @@ export async function POST(request: Request) {
   }
 
   const certificateCode = existing?.certificate_code ?? existing?.cert_number ?? makeCertificateCode();
+  const issuedAt = existing?.issued_at ?? new Date().toISOString();
+  const effectiveTemplate = (template ?? null) as unknown as TemplateRow | null;
+  const shouldRender =
+    shouldRenderServerSide() &&
+    effectiveTemplate &&
+    (!existing?.pdf_url ||
+      !existing?.image_url ||
+      (input.templateId != null && input.templateId !== existing?.template_id));
+
+  let renderedUrls: { pdfUrl: string; imageUrl: string } | null = null;
+  if (shouldRender && effectiveTemplate) {
+    renderedUrls = await renderAndUploadCertificate({
+      template: effectiveTemplate,
+      student: student as unknown as StudentRow,
+      course: course as unknown as CourseRow,
+      certificateCode,
+      issuedAt,
+      verifyUrl: buildVerifyUrl(request, certificateCode),
+    });
+  }
 
   if (existing) {
     const { data: updated, error: updateErr } = await service
@@ -109,6 +201,8 @@ export async function POST(request: Request) {
       .update({
         template_id: input.templateId ?? existing.template_id,
         certificate_code: certificateCode,
+        pdf_url: renderedUrls?.pdfUrl ?? existing.pdf_url,
+        image_url: renderedUrls?.imageUrl ?? existing.image_url,
       })
       .eq("id", existing.id)
       .select("*")
@@ -134,7 +228,9 @@ export async function POST(request: Request) {
       template_id: input.templateId ?? null,
       cert_number: certificateCode,
       certificate_code: certificateCode,
-      issued_at: new Date().toISOString(),
+      issued_at: issuedAt,
+      pdf_url: renderedUrls?.pdfUrl ?? null,
+      image_url: renderedUrls?.imageUrl ?? null,
     })
     .select("*")
     .single();
@@ -153,4 +249,3 @@ export async function POST(request: Request) {
     { status: 201 }
   );
 }
-

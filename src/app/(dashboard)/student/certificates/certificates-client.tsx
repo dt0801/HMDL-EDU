@@ -60,6 +60,8 @@ export function CertificatesClient({ studentId }: { studentId: string }) {
                 </div>
                 <CertificateDownloadActions
                   certificateId={c.id}
+                  pdfUrl={c.pdf_url}
+                  imageUrl={c.image_url}
                   templateJSON={c.template?.canvas_json}
                   width={c.template?.width}
                   height={c.template?.height}

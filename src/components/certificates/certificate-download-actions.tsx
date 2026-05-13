@@ -15,12 +15,16 @@ import type { Json } from "@/types/database.types";
 
 export function CertificateDownloadActions({
   certificateId,
+  pdfUrl,
+  imageUrl,
   templateJSON,
   width,
   height,
   data,
 }: {
   certificateId: string;
+  pdfUrl?: string | null;
+  imageUrl?: string | null;
   templateJSON?: Json | null;
   width?: number | null;
   height?: number | null;
@@ -30,6 +34,11 @@ export function CertificateDownloadActions({
   const hasTemplate = Boolean(templateJSON);
 
   const downloadPdf = async () => {
+    if (pdfUrl) {
+      window.open(pdfUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
     if (!templateJSON) {
       window.open(`/api/certificates/${certificateId}`, "_blank", "noopener,noreferrer");
       return;
@@ -51,6 +60,11 @@ export function CertificateDownloadActions({
   };
 
   const downloadPng = async () => {
+    if (imageUrl) {
+      window.open(imageUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
     if (!templateJSON) {
       toast.error("Chứng chỉ này chưa gắn template PNG.");
       return;
@@ -90,4 +104,3 @@ export function CertificateDownloadActions({
     </div>
   );
 }
-

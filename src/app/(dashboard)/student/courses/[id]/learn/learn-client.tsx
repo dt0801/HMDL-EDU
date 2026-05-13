@@ -306,6 +306,8 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
               {courseCertificate ? (
                 <CertificateDownloadActions
                   certificateId={courseCertificate.id}
+                  pdfUrl={courseCertificate.pdf_url}
+                  imageUrl={courseCertificate.image_url}
                   templateJSON={courseCertificate.template?.canvas_json}
                   width={courseCertificate.template?.width}
                   height={courseCertificate.template?.height}
