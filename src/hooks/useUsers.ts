@@ -83,3 +83,21 @@ export function useToggleUserActive() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
   });
 }
+
+export function useAdminUpdateUserAuth() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; email?: string; password?: string }) => {
+      const res = await fetch(`/api/admin/users/${input.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: input.email, password: input.password }),
+      });
+      const json = (await res.json().catch(() => null)) as { error?: string } | null;
+      if (!res.ok) {
+        throw new Error(json?.error ?? "Không cập nhật được tài khoản");
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+  });
+}

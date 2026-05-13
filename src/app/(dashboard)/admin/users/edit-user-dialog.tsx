@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useDepartments } from "@/hooks/useDepartments";
-import { useCreateUser, useUpdateUser, useUsers } from "@/hooks/useUsers";
+import { useAdminUpdateUserAuth, useCreateUser, useUpdateUser, useUsers } from "@/hooks/useUsers";
 import { createUserSchema, updateUserSchema } from "@/lib/validations/user.schema";
 import type { ProfileWithDepartmentEmbed } from "@/types/database.types";
 
@@ -53,6 +53,7 @@ export function EditUserDialog({
 
   const updateUser = useUpdateUser();
   const createUser = useCreateUser();
+  const updateAuthUser = useAdminUpdateUserAuth();
 
   const mode: "edit" | "create" = user ? "edit" : "create";
   const title = mode === "edit" ? "Chỉnh sửa người dùng" : "Thêm người dùng";
@@ -89,7 +90,7 @@ export function EditUserDialog({
     reset(defaultValues);
   }, [defaultValues, reset]);
 
-  const onSubmit = (data: FormInput) => {
+  const onSubmit = async (data: FormInput) => {
     const deptId =
       data.department_id && data.department_id !== "" ? data.department_id : null;
     const deptName = deptId
@@ -123,6 +124,24 @@ export function EditUserDialog({
 
     if (!user) return;
 
+    // Update Auth (email/password) via server if needed.
+    try {
+      const nextEmail = data.email?.trim();
+      const nextPassword = data.password?.trim();
+      const shouldUpdateEmail = !!nextEmail && nextEmail !== user.email;
+      const shouldUpdatePassword = !!nextPassword;
+      if (shouldUpdateEmail || shouldUpdatePassword) {
+        await updateAuthUser.mutateAsync({
+          id: user.id,
+          email: shouldUpdateEmail ? nextEmail : undefined,
+          password: shouldUpdatePassword ? nextPassword : undefined,
+        });
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Không cập nhật được email/mật khẩu");
+      return;
+    }
+
     const parsed = updateUserSchema.parse({
       full_name: data.full_name,
       role: data.role,
@@ -146,7 +165,10 @@ export function EditUserDialog({
     );
   };
 
-  const isPending = mode === "edit" ? updateUser.isPending : createUser.isPending;
+  const isPending =
+    mode === "edit"
+      ? updateUser.isPending || updateAuthUser.isPending
+      : createUser.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -171,14 +193,13 @@ export function EditUserDialog({
             <Input
               id="email"
               type="email"
-              disabled={mode === "edit"}
               placeholder="ten.ban@hmdl.vn"
               {...register("email")}
             />
             {errors.email ? <p className="text-sm text-destructive">{errors.email.message}</p> : null}
             {mode === "edit" ? (
               <p className="text-xs text-muted-foreground">
-                Email gắn với Supabase Auth; hiện màn hình này không thay đổi email đăng nhập.
+                Thay email sẽ cập nhật cả Supabase Auth và hồ sơ trong hệ thống.
               </p>
             ) : null}
           </div>
@@ -201,7 +222,21 @@ export function EditUserDialog({
                 </p>
               )}
             </div>
-          ) : null}
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="password">Đặt lại mật khẩu (tùy chọn)</Label>
+              <Input
+                id="password"
+                type="text"
+                placeholder="Để trống nếu không đổi"
+                autoComplete="new-password"
+                {...register("password")}
+              />
+              <p className="text-xs text-muted-foreground">
+                Nếu nhập, mật khẩu sẽ được cập nhật ngay vào Supabase Auth.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Khoa/phòng ban</Label>
