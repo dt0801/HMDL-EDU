@@ -30,13 +30,14 @@ import { useExamsByCourse } from "@/hooks/useExams";
 import { useLessons } from "@/hooks/useLessons";
 import { useCourseProgress, useUpsertProgress } from "@/hooks/useLessonProgress";
 import { useStudentLiveSessions } from "@/hooks/useLiveSessions";
+import { useCourseCertificate } from "@/hooks/useCertificates";
 import {
   isExternalUrl,
   resolveDocumentFileUrl,
   resolveLessonContentUrl,
 } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/client";
-import { cn, formatDateTime, formatDuration } from "@/lib/utils";
+import { cn, formatDate, formatDateTime, formatDuration } from "@/lib/utils";
 import type { Lesson } from "@/types/database.types";
 
 export function LearnClient({ courseId, studentId }: { courseId: string; studentId: string }) {
@@ -44,6 +45,7 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
   const { data: course } = useCourse(courseId);
   const { data: lessons, isLoading: lessonsLoading } = useLessons(courseId);
   const { data: progress } = useCourseProgress(studentId, courseId);
+  const { data: courseCertificate } = useCourseCertificate(studentId, courseId);
   const { data: exams } = useExamsByCourse(courseId);
   const { data: liveSessions = [] } = useStudentLiveSessions(studentId, { courseId });
   const { data: documents = [] } = useCourseDocuments(courseId, {
@@ -283,6 +285,34 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
             </div>
             <Progress value={completionPercent} />
           </div>
+
+          <Card>
+            <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold">Chứng chỉ</p>
+                {courseCertificate ? (
+                  <p className="text-sm text-muted-foreground">
+                    Đã cấp chứng chỉ số{" "}
+                    <span className="font-medium text-foreground">{courseCertificate.cert_number}</span>{" "}
+                    ({formatDate(courseCertificate.issued_at)}).
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Chưa có chứng chỉ cho khóa học này.</p>
+                )}
+              </div>
+              {courseCertificate ? (
+                <Button asChild size="sm">
+                  <a href={`/api/certificates/${courseCertificate.id}`} target="_blank" rel="noreferrer">
+                    <Download className="mr-2 h-4 w-4" /> Tải PDF
+                  </a>
+                </Button>
+              ) : (
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/student/certificates">Xem tất cả</Link>
+                </Button>
+              )}
+            </CardContent>
+          </Card>
 
           {!current ? (
             <Card>

@@ -104,6 +104,7 @@ export const NAV_BY_ROLE: Record<UserRole, NavSection[]> = {
         { href: "/instructor/live-sessions", label: "Lớp học trực tuyến", icon: CalendarClock },
         { href: "/instructor/documents", label: "Tài liệu", icon: BookOpenText },
         { href: "/instructor/exams", label: "Đề thi", icon: ClipboardList },
+        { href: "/instructor/certificates", label: "Chứng chỉ", icon: Award },
       ],
     },
   ],
