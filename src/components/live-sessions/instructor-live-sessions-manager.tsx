@@ -2,7 +2,6 @@
 
 import {
   CalendarClock,
-  CalendarRange,
   Copy,
   ExternalLink,
   Pencil,
@@ -16,7 +15,7 @@ import { EmptyState } from "@/components/layout/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -36,6 +35,7 @@ import {
 } from "@/hooks/useLiveSessions";
 import type { LiveSessionInput } from "@/lib/validations/live-session.schema";
 import { formatDate } from "@/lib/utils";
+import type { DateRange } from "react-day-picker";
 
 import { LiveSessionDialog } from "./live-session-dialog";
 
@@ -50,6 +50,12 @@ function toDateInputValue(value: Date) {
   const m = String(value.getMonth() + 1).padStart(2, "0");
   const d = String(value.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+function parseDateInputValue(value: string) {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function addDays(base: Date, days: number) {
@@ -98,6 +104,12 @@ export function InstructorLiveSessionsManager({ courseId }: { courseId?: string 
   const [editingSession, setEditingSession] = useState<LiveSessionWithDetails | null>(null);
   const [fromDate, setFromDate] = useState(() => toDateInputValue(new Date()));
   const [toDate, setToDate] = useState(() => toDateInputValue(addDays(new Date(), 90)));
+
+  const dateRange: DateRange | undefined = useMemo(() => {
+    const from = parseDateInputValue(fromDate) ?? undefined;
+    const to = parseDateInputValue(toDate) ?? undefined;
+    return from || to ? { from, to } : undefined;
+  }, [fromDate, toDate]);
 
   const selectableCourses = useMemo(
     () => courses.map((course) => ({ id: course.id, title: course.title })),
@@ -210,19 +222,15 @@ export function InstructorLiveSessionsManager({ courseId }: { courseId?: string 
 
             <div className="space-y-2">
               <Label>Khoảng ngày</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <CalendarRange className="h-3.5 w-3.5" />
-                    Từ ngày
-                  </div>
-                  <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs text-muted-foreground">Đến ngày</div>
-                  <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-                </div>
-              </div>
+              <DateRangePicker
+                value={dateRange}
+                onChange={(range) => {
+                  const nextFrom = range?.from ? toDateInputValue(range.from) : "";
+                  const nextTo = range?.to ? toDateInputValue(range.to) : "";
+                  setFromDate(nextFrom);
+                  setToDate(nextTo);
+                }}
+              />
             </div>
           </div>
 
