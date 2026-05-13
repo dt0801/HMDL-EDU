@@ -28,7 +28,7 @@ export function Sidebar({ role }: { role: UserRole }) {
     >
       <div className="flex h-16 items-center justify-between border-b px-4">
         <Link
-          href={`/${role === "admin" ? "admin/users" : role === "instructor" ? "instructor/courses" : "student/dashboard"}`}
+          href={`/${role === "admin" ? "admin" : role === "instructor" ? "instructor/courses" : "student/dashboard"}`}
           className="flex items-center gap-2 font-semibold text-primary"
         >
           <HeartPulse className="h-6 w-6 shrink-0" />
