@@ -3,7 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { type SubmitErrorHandler, useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -53,6 +54,7 @@ export function LiveSessionDialog({
     reset,
     watch,
     setValue,
+    setFocus,
     formState: { errors },
   } = useForm<LiveSessionInput>({
     resolver: zodResolver(liveSessionSchema),
@@ -92,7 +94,15 @@ export function LiveSessionDialog({
           <DialogTitle>{session ? "Sửa buổi học trực tuyến" : "Tạo buổi học trực tuyến"}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <form
+          onSubmit={handleSubmit(onSubmit, ((formErrors) => {
+            toast.error("Vui lòng kiểm tra lại thông tin.");
+            const firstErrorField = Object.keys(formErrors)[0] as keyof LiveSessionInput | undefined;
+            if (firstErrorField) setFocus(firstErrorField);
+          }) satisfies SubmitErrorHandler<LiveSessionInput>)}
+          className="space-y-4"
+          noValidate
+        >
           <div className="space-y-2">
             <Label htmlFor="session_title">Tiêu đề</Label>
             <input

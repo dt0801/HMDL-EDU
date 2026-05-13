@@ -7,7 +7,7 @@ type ToasterProps = React.ComponentProps<typeof Sonner>;
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
-      className="toaster group"
+      className="toaster group z-[9999]"
       toastOptions={{
         classNames: {
           toast:
