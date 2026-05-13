@@ -75,15 +75,17 @@ function SortableRow({
       }}
       className="flex items-center gap-3 rounded-md border bg-card p-3"
     >
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         {...attributes}
         {...listeners}
         className="cursor-grab text-muted-foreground hover:text-foreground"
         aria-label="Kéo để sắp xếp"
       >
         <GripVertical className="h-4 w-4" />
-      </button>
+      </Button>
       <div className="flex h-8 w-8 items-center justify-center rounded bg-muted">
         <Icon className="h-4 w-4" />
       </div>

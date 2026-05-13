@@ -4,6 +4,7 @@ import { Fragment } from "react";
 
 import { Check } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export type StepperItem = {
@@ -46,12 +47,13 @@ export function Stepper({
           return (
             <Fragment key={s.key}>
               <li className="flex min-w-0 flex-1 flex-col items-center text-center">
-                <button
+                <Button
                   type="button"
                   disabled={!onValueChange || isDisabled}
                   onClick={() => onValueChange?.(s.key)}
+                  variant="ghost"
                   className={cn(
-                    "flex w-full max-w-[8rem] flex-col items-center gap-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                    "h-auto w-full max-w-[8rem] flex-col items-center gap-1.5 p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
                     onValueChange && !isDisabled ? "cursor-pointer" : "cursor-default"
                   )}
                   aria-current={isCurrent ? "step" : undefined}
@@ -81,9 +83,9 @@ export function Stepper({
                       <div className="mt-0.5 hidden text-[10px] leading-snug text-muted-foreground sm:block sm:text-[11px]">
                         {s.description}
                       </div>
-                    ) : null}
+                  ) : null}
                   </div>
-                </button>
+                </Button>
               </li>
 
               {idx < items.length - 1 ? (

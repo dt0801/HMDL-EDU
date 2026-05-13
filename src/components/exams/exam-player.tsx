@@ -6,7 +6,9 @@ import { useEffect, useMemo, useState } from "react";
 import type { QuestionWithAnswers } from "@/hooks/useExams";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 
 export type AnswerSelection = Record<string, string[]>; // question_id -> answer_ids[]
@@ -95,29 +97,56 @@ export function ExamPlayer({
             <CardTitle className="text-base leading-relaxed">{current.content}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {current.answers.map((a) => {
-              const isMulti = current.type === "multi";
-              const isSelected = (selection[current.id] ?? []).includes(a.id);
-              return (
-                <label
-                  key={a.id}
-                  className={cn(
-                    "flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors",
-                    isSelected ? "border-primary bg-primary/5" : "hover:bg-muted/50"
-                  )}
-                >
-                  <input
-                    type={isMulti ? "checkbox" : "radio"}
-                    name={current.id}
-                    className="mt-0.5 h-4 w-4 accent-primary"
-                    checked={isSelected}
-                    onChange={() => toggle(current.id, a.id, isMulti)}
-                    disabled={submitted}
-                  />
-                  <span className="text-sm">{a.content}</span>
-                </label>
-              );
-            })}
+            {current.type === "multi" ? (
+              current.answers.map((a) => {
+                const isSelected = (selection[current.id] ?? []).includes(a.id);
+                return (
+                  <label
+                    key={a.id}
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors",
+                      isSelected ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                    )}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggle(current.id, a.id, true)}
+                      disabled={submitted}
+                      className="mt-0.5"
+                      aria-label={`Chọn đáp án: ${a.content}`}
+                    />
+                    <span className="text-sm">{a.content}</span>
+                  </label>
+                );
+              })
+            ) : (
+              <RadioGroup
+                value={(selection[current.id] ?? [])[0] ?? ""}
+                onValueChange={(v) => toggle(current.id, v, false)}
+                className="space-y-2"
+              >
+                {current.answers.map((a) => {
+                  const isSelected = (selection[current.id] ?? []).includes(a.id);
+                  return (
+                    <label
+                      key={a.id}
+                      className={cn(
+                        "flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors",
+                        isSelected ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                      )}
+                    >
+                      <RadioGroupItem
+                        value={a.id}
+                        disabled={submitted}
+                        className="mt-0.5"
+                        aria-label={`Chọn đáp án: ${a.content}`}
+                      />
+                      <span className="text-sm">{a.content}</span>
+                    </label>
+                  );
+                })}
+              </RadioGroup>
+            )}
           </CardContent>
         </Card>
 
@@ -152,21 +181,20 @@ export function ExamPlayer({
               const answered = (selection[q.id]?.length ?? 0) > 0;
               const isCurrent = idx === currentIdx;
               return (
-                <button
+                <Button
                   key={q.id}
                   type="button"
                   onClick={() => setCurrentIdx(idx)}
+                  size="sm"
+                  variant={isCurrent ? "default" : "secondary"}
                   className={cn(
-                    "h-8 rounded text-xs font-medium transition-colors",
-                    isCurrent
-                      ? "bg-primary text-primary-foreground"
-                      : answered
-                        ? "bg-emerald-500/15 text-emerald-700"
-                        : "bg-muted text-muted-foreground"
+                    "h-8 w-full px-0 text-xs font-medium",
+                    !isCurrent && answered ? "bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20" : ""
                   )}
+                  disabled={submitted}
                 >
                   {idx + 1}
-                </button>
+                </Button>
               );
             })}
           </div>

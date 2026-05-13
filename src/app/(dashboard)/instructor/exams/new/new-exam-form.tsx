@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/layout/empty-state";
 import { QuestionEditor } from "@/components/exams/question-editor";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -508,7 +509,7 @@ export function NewExamForm({
                           <p className="text-xs text-muted-foreground">
                             Preview/validation hiển thị tại đây. Upload/parse backend sẽ được nối sau.
                           </p>
-                          <input
+                          <Input
                             ref={uploadInputRef}
                             type="file"
                             accept=".csv,.xlsx"
@@ -600,17 +601,16 @@ export function NewExamForm({
               </TabsContent>
 
               <TabsContent value="settings" className="mt-4">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="flex items-start gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        className="mt-1 h-4 w-4 accent-primary"
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="flex items-start gap-2 text-sm">
+                      <Checkbox
                         checked={isPublished}
                         disabled={!hasValidQuestions}
-                        onChange={(e) =>
-                          setValue("is_published", e.target.checked, { shouldValidate: true })
+                        onCheckedChange={(checked) =>
+                          setValue("is_published", checked === true, { shouldValidate: true })
                         }
+                        className="mt-1"
                       />
                       <div>
                         <div className="font-medium">Xuất bản đề thi</div>
@@ -624,50 +624,42 @@ export function NewExamForm({
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 accent-primary"
+                      <Checkbox
                         checked={displaySettings.shuffle_questions}
-                        onChange={(e) =>
-                          setDisplaySettings((s) => ({ ...s, shuffle_questions: e.target.checked }))
+                        onCheckedChange={(checked) =>
+                          setDisplaySettings((s) => ({ ...s, shuffle_questions: checked === true }))
                         }
                       />
                       Trộn câu hỏi
                     </label>
                     <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 accent-primary"
+                      <Checkbox
                         checked={displaySettings.shuffle_answers}
-                        onChange={(e) =>
-                          setDisplaySettings((s) => ({ ...s, shuffle_answers: e.target.checked }))
+                        onCheckedChange={(checked) =>
+                          setDisplaySettings((s) => ({ ...s, shuffle_answers: checked === true }))
                         }
                       />
                       Trộn đáp án
                     </label>
                     <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 accent-primary"
+                      <Checkbox
                         checked={displaySettings.show_score_after_submit}
-                        onChange={(e) =>
+                        onCheckedChange={(checked) =>
                           setDisplaySettings((s) => ({
                             ...s,
-                            show_score_after_submit: e.target.checked,
+                            show_score_after_submit: checked === true,
                           }))
                         }
                       />
                       Hiển thị điểm sau khi nộp
                     </label>
                     <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 accent-primary"
+                      <Checkbox
                         checked={displaySettings.show_correct_answers_after_finish}
-                        onChange={(e) =>
+                        onCheckedChange={(checked) =>
                           setDisplaySettings((s) => ({
                             ...s,
-                            show_correct_answers_after_finish: e.target.checked,
+                            show_correct_answers_after_finish: checked === true,
                           }))
                         }
                       />

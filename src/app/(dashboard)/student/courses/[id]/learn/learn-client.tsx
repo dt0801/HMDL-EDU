@@ -433,16 +433,15 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
                   const isActive = current?.id === lesson.id;
                   const Icon = lesson.type === "video" ? Video : FileText;
 
-                  return (
-                    <li key={lesson.id}>
-                      <button
+                    return (
+                      <li key={lesson.id}>
+                      <Button
                         type="button"
+                        variant="ghost"
                         onClick={() => setCurrentId(lesson.id)}
                         className={cn(
-                          "flex w-full items-start gap-2 rounded-md p-2 text-left text-sm transition-colors",
-                          isActive
-                            ? "bg-primary/10 text-primary"
-                            : "text-foreground hover:bg-muted"
+                          "h-auto w-full justify-start gap-2 rounded-md p-2 text-left text-sm",
+                          isActive ? "bg-primary/10 text-primary hover:bg-primary/10" : "text-foreground hover:bg-muted"
                         )}
                       >
                         <span className="mt-0.5 w-5 shrink-0 text-xs text-muted-foreground">
@@ -460,7 +459,7 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
                         {itemProgress?.completed ? (
                           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
                         ) : null}
-                      </button>
+                      </Button>
                     </li>
                   );
                 })}

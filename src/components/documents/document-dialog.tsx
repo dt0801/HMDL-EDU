@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -372,12 +373,10 @@ export function DocumentDialog({
           </div>
 
           <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="h-4 w-4 accent-primary"
+            <Checkbox
               checked={isPublished}
-              onChange={(event) =>
-                setValue("is_published", event.target.checked, {
+              onCheckedChange={(checked) =>
+                setValue("is_published", checked === true, {
                   shouldValidate: true,
                   shouldDirty: true,
                 })

@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -184,11 +185,11 @@ export function CourseForm({
 
       <div className="flex flex-col gap-3 rounded-lg border p-4">
         <label className="flex cursor-pointer items-center gap-3">
-          <input
-            type="checkbox"
-            className="h-4 w-4 accent-primary"
+          <Checkbox
             checked={isPublished}
-            onChange={(e) => setValue("is_published", e.target.checked, { shouldValidate: true })}
+            onCheckedChange={(checked) =>
+              setValue("is_published", checked === true, { shouldValidate: true })
+            }
           />
           <div>
             <p className="text-sm font-medium">Xuất bản khóa học</p>
@@ -198,12 +199,10 @@ export function CourseForm({
           </div>
         </label>
         <label className="flex cursor-pointer items-center gap-3">
-          <input
-            type="checkbox"
-            className="h-4 w-4 accent-primary"
+          <Checkbox
             checked={requiresEnrollment}
-            onChange={(e) =>
-              setValue("requires_enrollment", e.target.checked, { shouldValidate: true })
+            onCheckedChange={(checked) =>
+              setValue("requires_enrollment", checked === true, { shouldValidate: true })
             }
           />
           <div>

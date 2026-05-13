@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   liveSessionSchema,
@@ -106,11 +107,7 @@ export function LiveSessionDialog({
         >
           <div className="space-y-2">
             <Label htmlFor="session_title">Tiêu đề</Label>
-            <input
-              id="session_title"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              {...register("title")}
-            />
+            <Input id="session_title" {...register("title")} />
             {errors.title ? (
               <p className="text-sm text-destructive">{errors.title.message}</p>
             ) : null}
@@ -152,12 +149,7 @@ export function LiveSessionDialog({
 
             <div className="space-y-2">
               <Label htmlFor="duration_minutes">Thời lượng (phút)</Label>
-              <input
-                id="duration_minutes"
-                type="number"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                {...register("duration_minutes")}
-              />
+              <Input id="duration_minutes" type="number" {...register("duration_minutes")} />
               {errors.duration_minutes ? (
                 <p className="text-sm text-destructive">{errors.duration_minutes.message}</p>
               ) : null}
@@ -166,12 +158,7 @@ export function LiveSessionDialog({
 
           <div className="space-y-2">
             <Label htmlFor="timezone">Múi giờ</Label>
-            <input
-              id="timezone"
-              readOnly
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground"
-              {...register("timezone")}
-            />
+            <Input id="timezone" readOnly {...register("timezone")} />
           </div>
 
           <DialogFooter>

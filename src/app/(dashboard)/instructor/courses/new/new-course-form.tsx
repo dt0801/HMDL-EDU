@@ -10,6 +10,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -418,13 +419,12 @@ export function NewCourseForm({ instructorId }: { instructorId: string }) {
                 </CardHeader>
                 <CardContent>
                   <label className="flex cursor-pointer items-start gap-3 rounded-lg border p-4">
-                    <input
-                      type="checkbox"
-                      className="mt-1 h-4 w-4 accent-primary"
+                    <Checkbox
                       checked={requiresEnrollment}
-                      onChange={(e) =>
-                        setValue("requires_enrollment", e.target.checked, { shouldValidate: true })
+                      onCheckedChange={(checked) =>
+                        setValue("requires_enrollment", checked === true, { shouldValidate: true })
                       }
+                      className="mt-1"
                     />
                     <div>
                       <p className="text-sm font-medium">Yêu cầu đăng ký</p>

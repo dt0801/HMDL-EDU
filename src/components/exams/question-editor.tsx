@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -167,42 +169,77 @@ export function QuestionEditor({
             {errors.answers?.message ? (
               <p className="text-sm text-destructive">{errors.answers.message}</p>
             ) : null}
-            <div className="space-y-2">
-              {fields.map((f, idx) => (
-                <div key={f.id} className="flex items-start gap-2">
-                  <input
-                    type={type === "multi" ? "checkbox" : "radio"}
-                    className="mt-3 h-4 w-4 accent-primary"
-                    checked={!!answers?.[idx]?.is_correct}
-                    onChange={(e) => handleSetCorrect(idx, e.target.checked)}
-                    aria-label="Đánh dấu đáp án đúng"
-                  />
-                  <div className="flex-1 space-y-1">
-                    <Input
-                      placeholder={`Đáp án ${idx + 1}`}
-                      {...register(`answers.${idx}.content`)}
-                      disabled={type === "true_false"}
+            {type === "multi" ? (
+              <div className="space-y-2">
+                {fields.map((f, idx) => (
+                  <div key={f.id} className="flex items-start gap-2">
+                    <Checkbox
+                      checked={!!answers?.[idx]?.is_correct}
+                      onCheckedChange={(checked) => handleSetCorrect(idx, checked === true)}
+                      className="mt-3"
+                      aria-label="Đánh dấu đáp án đúng"
                     />
-                    {errors.answers?.[idx]?.content ? (
-                      <p className="text-xs text-destructive">
-                        {errors.answers[idx]?.content?.message}
-                      </p>
+                    <div className="flex-1 space-y-1">
+                      <Input
+                        placeholder={`Đáp án ${idx + 1}`}
+                        {...register(`answers.${idx}.content`)}
+                      />
+                      {errors.answers?.[idx]?.content ? (
+                        <p className="text-xs text-destructive">
+                          {errors.answers[idx]?.content?.message}
+                        </p>
+                      ) : null}
+                    </div>
+                    {fields.length > 2 ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => remove(idx)}
+                        aria-label="Xóa đáp án"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     ) : null}
                   </div>
-                  {type !== "true_false" && fields.length > 2 ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => remove(idx)}
-                      aria-label="Xóa đáp án"
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  ) : null}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <RadioGroup
+                value={String(Math.max(0, answers?.findIndex((a) => a?.is_correct) ?? 0))}
+                onValueChange={(v) => handleSetCorrect(Number(v), true)}
+                className="space-y-2"
+              >
+                {fields.map((f, idx) => (
+                  <div key={f.id} className="flex items-start gap-2">
+                    <RadioGroupItem value={String(idx)} className="mt-3" aria-label="Đánh dấu đáp án đúng" />
+                    <div className="flex-1 space-y-1">
+                      <Input
+                        placeholder={`Đáp án ${idx + 1}`}
+                        {...register(`answers.${idx}.content`)}
+                        disabled={type === "true_false"}
+                      />
+                      {errors.answers?.[idx]?.content ? (
+                        <p className="text-xs text-destructive">
+                          {errors.answers[idx]?.content?.message}
+                        </p>
+                      ) : null}
+                    </div>
+                    {type !== "true_false" && fields.length > 2 ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => remove(idx)}
+                        aria-label="Xóa đáp án"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    ) : null}
+                  </div>
+                ))}
+              </RadioGroup>
+            )}
             {type !== "true_false" && fields.length < 8 ? (
               <Button
                 type="button"

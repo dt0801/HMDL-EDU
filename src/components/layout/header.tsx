@@ -49,8 +49,10 @@ export function Header({ profile }: { profile: Profile }) {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button
-            className="flex items-center gap-2 rounded-full p-1 transition-colors hover:bg-accent"
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-auto justify-start gap-2 rounded-full p-1 transition-colors hover:bg-accent"
             aria-label="Tài khoản"
           >
             <Avatar className="h-8 w-8">
@@ -63,7 +65,7 @@ export function Header({ profile }: { profile: Profile }) {
                 {roleLabel(profile.role)}
               </Badge>
             </div>
-          </button>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>

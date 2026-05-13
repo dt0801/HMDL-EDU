@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { QuestionEditor } from "@/components/exams/question-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -296,11 +297,9 @@ function ExamSettingsForm({
         </div>
       </div>
       <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          className="h-4 w-4 accent-primary"
+        <Checkbox
           checked={data.is_published}
-          onChange={(e) => setData({ ...data, is_published: e.target.checked })}
+          onCheckedChange={(checked) => setData({ ...data, is_published: checked === true })}
         />
         Xuất bản đề thi
       </label>
