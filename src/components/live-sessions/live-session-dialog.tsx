@@ -13,17 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Textarea } from "@/components/ui/textarea";
-import { useLessons } from "@/hooks/useLessons";
 import {
   liveSessionSchema,
   type LiveSessionInput,
@@ -31,7 +23,6 @@ import {
 import type { LiveSession } from "@/types/database.types";
 
 const DEFAULT_TIMEZONE = "Asia/Ho_Chi_Minh";
-const NO_LESSON = "__none__";
 
 function toDatetimeLocalValue(value: string) {
   const date = new Date(value);
@@ -44,21 +35,18 @@ export function LiveSessionDialog({
   open,
   onOpenChange,
   session,
-  courses,
-  defaultCourseId,
-  lockCourse,
+  courseId,
   onSubmit,
   isSubmitting,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   session: LiveSession | null;
-  courses: Array<{ id: string; title: string }>;
-  defaultCourseId?: string;
-  lockCourse?: boolean;
+  courseId: string;
   onSubmit: (input: LiveSessionInput) => void;
   isSubmitting?: boolean;
 }) {
+  const resolvedCourseId = session?.course_id ?? courseId;
   const {
     register,
     handleSubmit,
@@ -69,8 +57,8 @@ export function LiveSessionDialog({
   } = useForm<LiveSessionInput>({
     resolver: zodResolver(liveSessionSchema),
     defaultValues: {
-      course_id: defaultCourseId ?? "",
-      lesson_id: null,
+      course_id: resolvedCourseId,
+      lesson_id: session?.lesson_id ?? null,
       title: "",
       description: null,
       scheduled_start_at: "",
@@ -79,15 +67,13 @@ export function LiveSessionDialog({
     },
   });
 
-  const selectedCourseId = watch("course_id");
-  const selectedLessonId = watch("lesson_id");
-  const { data: lessons = [] } = useLessons(selectedCourseId || undefined);
+  const scheduledStartAt = watch("scheduled_start_at") ?? "";
 
   useEffect(() => {
     if (!open) return;
 
     reset({
-      course_id: session?.course_id ?? defaultCourseId ?? "",
+      course_id: resolvedCourseId,
       lesson_id: session?.lesson_id ?? null,
       title: session?.title ?? "",
       description: session?.description ?? null,
@@ -97,13 +83,7 @@ export function LiveSessionDialog({
       duration_minutes: session?.duration_minutes ?? 60,
       timezone: session?.timezone ?? DEFAULT_TIMEZONE,
     });
-  }, [defaultCourseId, open, reset, session]);
-
-  useEffect(() => {
-    if (!selectedLessonId) return;
-    if (lessons.some((lesson) => lesson.id === selectedLessonId)) return;
-    setValue("lesson_id", null, { shouldValidate: true, shouldDirty: true });
-  }, [lessons, selectedLessonId, setValue]);
+  }, [open, reset, resolvedCourseId, session]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -113,65 +93,13 @@ export function LiveSessionDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Khóa học</Label>
-              <Select
-                value={selectedCourseId}
-                onValueChange={(value) =>
-                  setValue("course_id", value, { shouldValidate: true, shouldDirty: true })
-                }
-                disabled={lockCourse}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn khóa học" />
-                </SelectTrigger>
-                <SelectContent>
-                  {courses.map((course) => (
-                    <SelectItem key={course.id} value={course.id}>
-                      {course.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.course_id ? (
-                <p className="text-sm text-destructive">{errors.course_id.message}</p>
-              ) : null}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Bài học liên kết</Label>
-              <Select
-                value={selectedLessonId ?? NO_LESSON}
-                onValueChange={(value) =>
-                  setValue("lesson_id", value === NO_LESSON ? null : value, {
-                    shouldValidate: true,
-                    shouldDirty: true,
-                  })
-                }
-                disabled={!selectedCourseId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Không gắn bài học" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_LESSON}>Không gắn bài học</SelectItem>
-                  {lessons.map((lesson) => (
-                    <SelectItem key={lesson.id} value={lesson.id}>
-                      {lesson.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.lesson_id ? (
-                <p className="text-sm text-destructive">{errors.lesson_id.message}</p>
-              ) : null}
-            </div>
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="session_title">Tiêu đề</Label>
-            <Input id="session_title" {...register("title")} />
+            <input
+              id="session_title"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              {...register("title")}
+            />
             {errors.title ? (
               <p className="text-sm text-destructive">{errors.title.message}</p>
             ) : null}
@@ -198,7 +126,12 @@ export function LiveSessionDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="scheduled_start_at">Bắt đầu lúc</Label>
-              <Input id="scheduled_start_at" type="datetime-local" {...register("scheduled_start_at")} />
+              <DateTimePicker
+                value={scheduledStartAt}
+                onChange={(nextValue) =>
+                  setValue("scheduled_start_at", nextValue, { shouldValidate: true, shouldDirty: true })
+                }
+              />
               {errors.scheduled_start_at ? (
                 <p className="text-sm text-destructive">
                   {errors.scheduled_start_at.message}
@@ -208,7 +141,12 @@ export function LiveSessionDialog({
 
             <div className="space-y-2">
               <Label htmlFor="duration_minutes">Thời lượng (phút)</Label>
-              <Input id="duration_minutes" type="number" {...register("duration_minutes")} />
+              <input
+                id="duration_minutes"
+                type="number"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                {...register("duration_minutes")}
+              />
               {errors.duration_minutes ? (
                 <p className="text-sm text-destructive">{errors.duration_minutes.message}</p>
               ) : null}
@@ -217,7 +155,12 @@ export function LiveSessionDialog({
 
           <div className="space-y-2">
             <Label htmlFor="timezone">Múi giờ</Label>
-            <Input id="timezone" readOnly {...register("timezone")} />
+            <input
+              id="timezone"
+              readOnly
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground"
+              {...register("timezone")}
+            />
           </div>
 
           <DialogFooter>

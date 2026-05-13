@@ -73,10 +73,10 @@ function formatTimeRange(startIso: string, durationMinutes: number) {
   const start = new Date(startIso);
   const end = new Date(start.getTime() + durationMinutes * 60_000);
 
-  const fmt = new Intl.DateTimeFormat("en-US", {
+  const fmt = new Intl.DateTimeFormat("vi-VN", {
     hour: "2-digit",
     minute: "2-digit",
-    hour12: true,
+    hour12: false,
   });
 
   return `${fmt.format(start)} - ${fmt.format(end)}`;
@@ -103,6 +103,12 @@ export function InstructorLiveSessionsManager({ courseId }: { courseId?: string 
     () => courses.map((course) => ({ id: course.id, title: course.title })),
     [courses]
   );
+
+  const courseIdForCreate = useMemo(() => {
+    if (courseId) return courseId;
+    if (selectedCourseId !== ALL_COURSES) return selectedCourseId;
+    return selectableCourses[0]?.id;
+  }, [courseId, selectedCourseId, selectableCourses]);
 
   const orderedSessions = useMemo(() => {
     const fromMs = fromDate ? new Date(`${fromDate}T00:00:00`).getTime() : Number.NEGATIVE_INFINITY;
@@ -221,7 +227,12 @@ export function InstructorLiveSessionsManager({ courseId }: { courseId?: string 
           </div>
 
           <Button
+            disabled={!courseIdForCreate}
             onClick={() => {
+              if (!courseIdForCreate) {
+                toast.error("Vui lòng chọn khóa học trước khi tạo buổi học.");
+                return;
+              }
               setEditingSession(null);
               setDialogOpen(true);
             }}
@@ -245,7 +256,12 @@ export function InstructorLiveSessionsManager({ courseId }: { courseId?: string 
           description="Tạo meeting Zoom đầu tiên cho khóa học để giảng viên và học viên cùng vào lớp."
           action={
             <Button
+              disabled={!courseIdForCreate}
               onClick={() => {
+                if (!courseIdForCreate) {
+                  toast.error("Vui lòng chọn khóa học trước khi tạo buổi học.");
+                  return;
+                }
                 setEditingSession(null);
                 setDialogOpen(true);
               }}
@@ -339,21 +355,19 @@ export function InstructorLiveSessionsManager({ courseId }: { courseId?: string 
         </div>
       )}
 
-      <LiveSessionDialog
-        open={dialogOpen}
-        onOpenChange={(nextOpen) => {
-          setDialogOpen(nextOpen);
-          if (!nextOpen) setEditingSession(null);
-        }}
-        session={editingSession}
-        courses={selectableCourses}
-        defaultCourseId={
-          courseId ?? (selectedCourseId === ALL_COURSES ? selectableCourses[0]?.id : selectedCourseId)
-        }
-        lockCourse={!!courseId}
-        onSubmit={handleSubmit}
-        isSubmitting={createLiveSession.isPending || updateLiveSession.isPending}
-      />
+      {courseIdForCreate || editingSession ? (
+        <LiveSessionDialog
+          open={dialogOpen}
+          onOpenChange={(nextOpen) => {
+            setDialogOpen(nextOpen);
+            if (!nextOpen) setEditingSession(null);
+          }}
+          session={editingSession}
+          courseId={courseIdForCreate ?? editingSession!.course_id}
+          onSubmit={handleSubmit}
+          isSubmitting={createLiveSession.isPending || updateLiveSession.isPending}
+        />
+      ) : null}
     </div>
   );
 }
