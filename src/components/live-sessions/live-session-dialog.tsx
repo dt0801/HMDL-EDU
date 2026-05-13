@@ -60,7 +60,8 @@ export function LiveSessionDialog({
     resolver: zodResolver(liveSessionSchema),
     defaultValues: {
       course_id: resolvedCourseId,
-      lesson_id: session?.lesson_id ?? null,
+      // Keep this undefined so zod can accept it as optional; schema will transform to null.
+      lesson_id: session?.lesson_id ?? undefined,
       title: "",
       description: null,
       scheduled_start_at: "",
@@ -76,7 +77,7 @@ export function LiveSessionDialog({
 
     reset({
       course_id: resolvedCourseId,
-      lesson_id: session?.lesson_id ?? null,
+      lesson_id: session?.lesson_id ?? undefined,
       title: session?.title ?? "",
       description: session?.description ?? null,
       scheduled_start_at: session?.scheduled_start_at
