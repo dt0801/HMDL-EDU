@@ -43,8 +43,9 @@ const DOCUMENT_KIND_OPTIONS: CourseDocumentKind[] = [
 ];
 
 export function InstructorDocumentsManager({ courseId }: { courseId?: string }) {
-  const { data: courses = [], isLoading: coursesLoading } = useCourses();
   const { data: profile } = useCurrentProfile();
+  const instructorId = profile?.role === "admin" ? undefined : profile?.id;
+  const { data: courses = [], isLoading: coursesLoading } = useCourses({ instructorId });
   const [selectedCourseId, setSelectedCourseId] = useState(courseId ?? ALL_COURSES);
   const [selectedKind, setSelectedKind] = useState<string>(ALL_KINDS);
   const activeCourseId = courseId ?? (selectedCourseId === ALL_COURSES ? undefined : selectedCourseId);

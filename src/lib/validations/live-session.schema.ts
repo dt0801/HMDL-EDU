@@ -1,10 +1,16 @@
 import { z } from "zod";
 
+// Accept `undefined` (missing) and `null` (explicit empty) from the client.
+// Normalize blank strings to `null` so DB stores a consistent empty value.
 const optionalTrimmed = z
   .string()
   .trim()
+  .nullable()
   .optional()
-  .transform((value) => (value ? value : null));
+  .transform((value) => {
+    if (value == null) return null;
+    return value.length > 0 ? value : null;
+  });
 
 export const liveSessionSchema = z.object({
   course_id: z.string().uuid("Khóa học không hợp lệ"),
@@ -29,3 +35,4 @@ export const liveSessionSchema = z.object({
 });
 
 export type LiveSessionInput = z.infer<typeof liveSessionSchema>;
+

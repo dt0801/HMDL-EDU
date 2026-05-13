@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { createClient } from "@/lib/supabase/client";
 import type { Certificate, Course, Notification, Profile } from "@/types/database.types";
@@ -70,3 +70,58 @@ export function useAdminEnrollments() {
   });
 }
 
+async function apiRequest<T>(input: RequestInfo, init?: RequestInit) {
+  const response = await fetch(input, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  if (!response.ok) {
+    let message = "Yêu cầu thất bại.";
+    try {
+      const payload = (await response.json()) as { error?: string };
+      message = payload.error ?? message;
+    } catch {
+      message = await response.text();
+    }
+    throw new Error(message);
+  }
+
+  return (await response.json()) as T;
+}
+
+export function useAdminCreateEnrollment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { student_id: string; course_id: string }) =>
+      apiRequest("/api/admin/enrollments", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "enrollments"] }),
+  });
+}
+
+export function useAdminUpdateEnrollment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; status: "active" | "completed" | "dropped" }) =>
+      apiRequest(`/api/admin/enrollments/${input.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: input.status }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "enrollments"] }),
+  });
+}
+
+export function useAdminDeleteEnrollment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string }) =>
+      apiRequest(`/api/admin/enrollments/${input.id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "enrollments"] }),
+  });
+}
