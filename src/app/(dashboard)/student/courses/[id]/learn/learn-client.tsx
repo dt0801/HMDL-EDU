@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { CertificateDownloadActions } from "@/components/certificates/certificate-download-actions";
 import { VideoPlayer } from "@/components/courses/video-player";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import { useLessons } from "@/hooks/useLessons";
 import { useCourseProgress, useUpsertProgress } from "@/hooks/useLessonProgress";
 import { useStudentLiveSessions } from "@/hooks/useLiveSessions";
 import { useCourseCertificate } from "@/hooks/useCertificates";
+import { useCurrentProfile } from "@/hooks/useAuth";
 import {
   isExternalUrl,
   resolveDocumentFileUrl,
@@ -43,6 +45,7 @@ import type { Lesson } from "@/types/database.types";
 export function LearnClient({ courseId, studentId }: { courseId: string; studentId: string }) {
   const supabase = useMemo(() => createClient(), []);
   const { data: course } = useCourse(courseId);
+  const { data: profile } = useCurrentProfile();
   const { data: lessons, isLoading: lessonsLoading } = useLessons(courseId);
   const { data: progress } = useCourseProgress(studentId, courseId);
   const { data: courseCertificate } = useCourseCertificate(studentId, courseId);
@@ -301,11 +304,18 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
                 )}
               </div>
               {courseCertificate ? (
-                <Button asChild size="sm">
-                  <a href={`/api/certificates/${courseCertificate.id}`} target="_blank" rel="noreferrer">
-                    <Download className="mr-2 h-4 w-4" /> Tải PDF
-                  </a>
-                </Button>
+                <CertificateDownloadActions
+                  certificateId={courseCertificate.id}
+                  templateJSON={courseCertificate.template?.canvas_json}
+                  width={courseCertificate.template?.width}
+                  height={courseCertificate.template?.height}
+                  data={{
+                    studentName: profile?.full_name ?? "Học viên",
+                    courseName: courseCertificate.course?.title ?? course?.title ?? "Khóa học",
+                    issuedDate: formatDate(courseCertificate.issued_at),
+                    certificateCode: courseCertificate.certificate_code ?? courseCertificate.cert_number,
+                  }}
+                />
               ) : (
                 <Button asChild size="sm" variant="outline">
                   <Link href="/student/certificates">Xem tất cả</Link>

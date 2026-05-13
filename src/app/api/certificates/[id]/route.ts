@@ -96,6 +96,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   type CertRow = {
     id: string;
     cert_number: string;
+    certificate_code: string | null;
     issued_at: string;
     course: { id: string; title: string } | null;
     student: { id: string; full_name: string } | null;
@@ -104,7 +105,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   const { data, error } = await supabase
     .from("certificates")
     .select(
-      "id, cert_number, issued_at, course:courses(id, title), student:profiles!certificates_student_id_fkey(id, full_name)"
+      "id, cert_number, certificate_code, issued_at, course:courses(id, title), student:profiles!certificates_student_id_fkey(id, full_name)"
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -120,7 +121,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     CertificateDoc({
       recipient: cert.student?.full_name ?? "Học viên",
       course: cert.course?.title ?? "Khóa học",
-      certNumber: cert.cert_number,
+      certNumber: cert.certificate_code ?? cert.cert_number,
       issuedAt,
     })
   );
@@ -128,7 +129,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   return new Response(stream as unknown as ReadableStream, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${cert.cert_number}.pdf"`,
+      "Content-Disposition": `inline; filename="${cert.certificate_code ?? cert.cert_number}.pdf"`,
       "Cache-Control": "private, max-age=300",
     },
   });

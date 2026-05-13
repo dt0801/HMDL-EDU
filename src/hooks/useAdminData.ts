@@ -3,11 +3,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { createClient } from "@/lib/supabase/client";
-import type { Certificate, Course, Notification, Profile } from "@/types/database.types";
+import type { Certificate, CertificateTemplate, Course, Notification, Profile } from "@/types/database.types";
 
 export type CertificateWithRefs = Certificate & {
   student: Pick<Profile, "id" | "full_name" | "email" | "department"> | null;
   course: Pick<Course, "id" | "title" | "category"> | null;
+  template: Pick<CertificateTemplate, "id" | "name" | "canvas_json" | "width" | "height"> | null;
 };
 
 export type NotificationWithUser = Notification & {
@@ -32,7 +33,7 @@ export function useAdminCertificates() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("certificates")
-        .select("*, student:profiles(id, full_name, email, department), course:courses(id, title, category)")
+        .select("*, student:profiles(id, full_name, email, department), course:courses(id, title, category), template:certificate_templates(id, name, canvas_json, width, height)")
         .order("issued_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as CertificateWithRefs[];

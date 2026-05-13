@@ -1,18 +1,20 @@
 "use client";
 
-import { Award, Download } from "lucide-react";
+import { Award } from "lucide-react";
 
+import { CertificateDownloadActions } from "@/components/certificates/certificate-download-actions";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCurrentProfile } from "@/hooks/useAuth";
 import { useMyCertificates } from "@/hooks/useCertificates";
 import { formatDate } from "@/lib/utils";
 
 export function CertificatesClient({ studentId }: { studentId: string }) {
   const { data, isLoading } = useMyCertificates(studentId);
+  const { data: profile } = useCurrentProfile();
 
   return (
     <>
@@ -53,14 +55,21 @@ export function CertificatesClient({ studentId }: { studentId: string }) {
               </div>
               <CardContent className="space-y-3 p-4">
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Số: {c.cert_number}</span>
+                  <span>Số: {c.certificate_code ?? c.cert_number}</span>
                   <span>{formatDate(c.issued_at)}</span>
                 </div>
-                <Button asChild size="sm" className="w-full">
-                  <a href={`/api/certificates/${c.id}`} target="_blank" rel="noreferrer">
-                    <Download className="mr-2 h-4 w-4" /> Tải PDF
-                  </a>
-                </Button>
+                <CertificateDownloadActions
+                  certificateId={c.id}
+                  templateJSON={c.template?.canvas_json}
+                  width={c.template?.width}
+                  height={c.template?.height}
+                  data={{
+                    studentName: profile?.full_name ?? "Học viên",
+                    courseName: c.course?.title ?? "Khóa học",
+                    issuedDate: formatDate(c.issued_at),
+                    certificateCode: c.certificate_code ?? c.cert_number,
+                  }}
+                />
               </CardContent>
             </Card>
           ))}

@@ -1,12 +1,13 @@
 "use client";
 
-import { Award, Download, Search } from "lucide-react";
+import { Award, ExternalLink, Search } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { CertificateDownloadActions } from "@/components/certificates/certificate-download-actions";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { useCurrentProfile } from "@/hooks/useAuth";
 import { useInstructorCertificates } from "@/hooks/useCertificates";
-import { formatDateTime } from "@/lib/utils";
+import { formatDate, formatDateTime } from "@/lib/utils";
 
 const ALL_COURSES = "__all__";
 
@@ -112,32 +113,52 @@ export function InstructorCertificatesClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.cert_number}</TableCell>
-                    <TableCell>{c.student?.full_name ?? "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">{c.student?.email ?? "—"}</TableCell>
-                    <TableCell className="space-x-2">
-                      <span>{c.course?.title ?? "—"}</span>
-                      {c.course?.category ? (
-                        <Badge variant="secondary" className="align-middle">
-                          {c.course.category}
-                        </Badge>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDateTime(c.issued_at)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button asChild size="sm" variant="outline">
-                        <a href={`/api/certificates/${c.id}`} target="_blank" rel="noreferrer">
-                          <Download className="mr-2 h-4 w-4" />
-                          PDF
-                        </a>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filtered.map((c) => {
+                  const code = c.certificate_code ?? c.cert_number;
+                  return (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-medium">
+                          <div className="space-y-1">
+                            <span>{code}</span>
+                            <Link
+                              href={`/verify/${encodeURIComponent(code)}`}
+                              target="_blank"
+                              className="flex items-center text-xs text-primary hover:underline"
+                            >
+                              Verify <ExternalLink className="ml-1 h-3 w-3" />
+                            </Link>
+                          </div>
+                        </TableCell>
+                        <TableCell>{c.student?.full_name ?? "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">{c.student?.email ?? "—"}</TableCell>
+                        <TableCell className="space-x-2">
+                          <span>{c.course?.title ?? "—"}</span>
+                          {c.course?.category ? (
+                            <Badge variant="secondary" className="align-middle">
+                              {c.course.category}
+                            </Badge>
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDateTime(c.issued_at)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <CertificateDownloadActions
+                            certificateId={c.id}
+                            templateJSON={c.template?.canvas_json}
+                            width={c.template?.width}
+                            height={c.template?.height}
+                            data={{
+                              studentName: c.student?.full_name ?? "Học viên",
+                              courseName: c.course?.title ?? "Khóa học",
+                              issuedDate: formatDate(c.issued_at),
+                              certificateCode: code,
+                            }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
@@ -146,4 +167,3 @@ export function InstructorCertificatesClient() {
     </>
   );
 }
-

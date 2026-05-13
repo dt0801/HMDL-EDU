@@ -315,6 +315,12 @@ type CertificateRow = {
   course_id: string;
   issued_at: string;
   cert_number: string;
+  template_id: string | null;
+  certificate_code: string | null;
+  pdf_url: string | null;
+  image_url: string | null;
+  revoked_at: string | null;
+  revoked_reason: string | null;
 };
 type CertificateInsert = {
   id?: string;
@@ -322,6 +328,37 @@ type CertificateInsert = {
   course_id: string;
   issued_at?: string;
   cert_number?: string;
+  template_id?: string | null;
+  certificate_code?: string | null;
+  pdf_url?: string | null;
+  image_url?: string | null;
+  revoked_at?: string | null;
+  revoked_reason?: string | null;
+};
+
+type CertificateTemplateRow = {
+  id: string;
+  name: string;
+  course_id: string | null;
+  canvas_json: Json;
+  width: number;
+  height: number;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+type CertificateTemplateInsert = {
+  id?: string;
+  name: string;
+  course_id?: string | null;
+  canvas_json: Json;
+  width?: number;
+  height?: number;
+  is_active?: boolean;
+  created_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
 };
 
 type NotificationRow = {
@@ -446,6 +483,12 @@ export type Database = {
         Update: Partial<CertificateInsert>;
         Relationships: Rel[];
       };
+      certificate_templates: {
+        Row: CertificateTemplateRow;
+        Insert: CertificateTemplateInsert;
+        Update: Partial<CertificateTemplateInsert>;
+        Relationships: Rel[];
+      };
       notifications: {
         Row: NotificationRow;
         Insert: NotificationInsert;
@@ -503,4 +546,5 @@ export type Question = QuestionRow;
 export type Answer = AnswerRow;
 export type ExamAttempt = ExamAttemptRow;
 export type Certificate = CertificateRow;
+export type CertificateTemplate = CertificateTemplateRow;
 export type Notification = NotificationRow;

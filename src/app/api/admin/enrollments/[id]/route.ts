@@ -19,6 +19,33 @@ function makeCertNumber() {
   return `HMDL-${y}${m}${d}-${rnd}`;
 }
 
+async function resolveCertificateTemplate(
+  service: ReturnType<typeof createServiceClient>,
+  courseId: string
+) {
+  const { data: courseTemplate } = await service
+    .from("certificate_templates")
+    .select("id")
+    .eq("course_id", courseId)
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (courseTemplate?.id) return courseTemplate.id;
+
+  const { data: globalTemplate } = await service
+    .from("certificate_templates")
+    .select("id")
+    .is("course_id", null)
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return globalTemplate?.id ?? null;
+}
+
 async function ensureCertificate(service: ReturnType<typeof createServiceClient>, studentId: string, courseId: string) {
   const { data: existing } = await service
     .from("certificates")
@@ -28,13 +55,18 @@ async function ensureCertificate(service: ReturnType<typeof createServiceClient>
     .maybeSingle();
   if (existing?.id) return;
 
+  const certNumber = makeCertNumber();
+  const templateId = await resolveCertificateTemplate(service, courseId);
+
   await service
     .from("certificates")
     .insert({
       student_id: studentId,
       course_id: courseId,
       issued_at: new Date().toISOString(),
-      cert_number: makeCertNumber(),
+      cert_number: certNumber,
+      certificate_code: certNumber,
+      template_id: templateId,
     })
     .throwOnError();
 }
@@ -189,4 +221,3 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
 
   return NextResponse.json({ ok: true }, { status: 200 });
 }
-

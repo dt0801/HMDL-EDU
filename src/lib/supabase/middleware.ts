@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/database.types";
 import type { UserRole } from "@/types/database.types";
 
-const PUBLIC_PATHS = ["/login", "/auth"];
+const PUBLIC_PATHS = ["/login", "/auth", "/verify", "/api/certificate/verify"];
 
 const ROLE_HOME: Record<UserRole, string> = {
   admin: "/admin/users",
