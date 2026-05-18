@@ -42,7 +42,7 @@ export const NAV_BY_ROLE: Record<UserRole, NavSection[]> = {
     {
       title: "Tổng quan",
       items: [
-        { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
         {
           href: "/admin/activity",
           label: "Hoạt động gần đây",
