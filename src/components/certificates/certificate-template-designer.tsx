@@ -260,12 +260,12 @@ export function CertificateTemplateDesigner({
   };
 
   return (
-    <div className="grid min-w-0 gap-4 2xl:grid-cols-[360px_minmax(0,1fr)]">
-      <Card className="min-w-0 self-start">
-        <CardHeader className="pb-3">
+    <div className="grid min-w-0 gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
+      <Card className="min-w-0 self-start overflow-hidden">
+        <CardHeader className="border-b bg-muted/30 pb-3">
           <CardTitle className="text-base">Cấu hình template</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-5 p-4 pt-0">
+        <CardContent className="space-y-5 p-5">
           <div className="space-y-2">
             <Label>Tên mẫu</Label>
             <Input value={name} onChange={(event) => setName(event.target.value)} />
@@ -337,20 +337,25 @@ export function CertificateTemplateDesigner({
             Lưu template
           </Button>
 
-          <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+          <div className="rounded-md border bg-sky-50 p-3 text-xs text-sky-800">
             Mã preview: {buildCertificateCodePreview()}. Bấm đúp vào chữ trên canvas để sửa trực tiếp.
           </div>
         </CardContent>
       </Card>
 
       <Card className="min-w-0 overflow-hidden">
-        <CardHeader className="border-b pb-3">
-          <CardTitle className="text-base">Preview chứng chỉ</CardTitle>
+        <CardHeader className="border-b bg-muted/30 pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <CardTitle className="text-base">Preview chứng chỉ</CardTitle>
+            <div className="rounded-md border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground">
+              {WIDTH} x {HEIGHT}px
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="min-w-0 overflow-auto bg-slate-100 p-4">
-            <div className="mx-auto aspect-[1320/934] w-full max-w-[1120px]">
-              <canvas ref={canvasElementRef} className="h-auto w-full rounded-md border bg-white shadow-sm" />
+          <div className="min-w-0 overflow-auto bg-slate-100 p-5">
+            <div className="certificate-canvas-stage mx-auto aspect-[1320/934] w-full max-w-[1080px] rounded-lg bg-white p-2 shadow-sm ring-1 ring-border [&_.canvas-container]:!h-full [&_.canvas-container]:!w-full [&_canvas]:!h-full [&_canvas]:!w-full">
+              <canvas ref={canvasElementRef} />
             </div>
           </div>
         </CardContent>

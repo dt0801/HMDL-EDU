@@ -89,6 +89,42 @@ export function AdminCertificatesClient() {
         description="Thiết kế template, cấp chứng chỉ và quản lý chứng chỉ đã phát hành."
       />
 
+      <div className="grid gap-3 md:grid-cols-3">
+        <Card>
+          <CardContent className="flex items-center justify-between p-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Đã phát hành</p>
+              <p className="mt-1 text-2xl font-semibold">{data?.length ?? 0}</p>
+            </div>
+            <div className="rounded-md bg-primary/10 p-2 text-primary">
+              <Award className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center justify-between p-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Template</p>
+              <p className="mt-1 text-2xl font-semibold">{templates.length}</p>
+            </div>
+            <div className="rounded-md bg-sky-100 p-2 text-sky-700">
+              <Award className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center justify-between p-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Khóa học áp dụng</p>
+              <p className="mt-1 text-2xl font-semibold">{courses.length}</p>
+            </div>
+            <div className="rounded-md bg-emerald-100 p-2 text-emerald-700">
+              <Plus className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Tabs defaultValue="issued" className="min-w-0 space-y-4">
         <TabsList className="flex h-auto w-fit flex-wrap justify-start gap-1 bg-muted/70 p-1">
           <TabsTrigger value="issued">Đã cấp</TabsTrigger>
