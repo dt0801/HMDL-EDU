@@ -1,11 +1,11 @@
 "use client";
 
-import { Loader2, Plus, Save, Square, Trash2, Type } from "lucide-react";
+import { Loader2, Plus, RotateCcw, Save, Square, Trash2, Type } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -260,9 +260,12 @@ export function CertificateTemplateDesigner({
   };
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[320px_1fr]">
-      <Card>
-        <CardContent className="space-y-4 p-4">
+    <div className="grid min-w-0 gap-4 2xl:grid-cols-[360px_minmax(0,1fr)]">
+      <Card className="min-w-0 self-start">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Cấu hình template</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5 p-4 pt-0">
           <div className="space-y-2">
             <Label>Tên mẫu</Label>
             <Input value={name} onChange={(event) => setName(event.target.value)} />
@@ -320,6 +323,7 @@ export function CertificateTemplateDesigner({
               const canvas = canvasRef.current;
               if (fabric && canvas) setCanvasDefaults(fabric, canvas);
             }}>
+              <RotateCcw className="mr-2 h-4 w-4" />
               Reset
             </Button>
             <Button type="button" variant="outline" onClick={removeSelected}>
@@ -339,10 +343,15 @@ export function CertificateTemplateDesigner({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="overflow-auto p-3">
-          <div className="min-w-[900px]">
-            <canvas ref={canvasElementRef} className="h-auto w-full rounded-md border bg-white" />
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader className="border-b pb-3">
+          <CardTitle className="text-base">Preview chứng chỉ</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="min-w-0 overflow-auto bg-slate-100 p-4">
+            <div className="mx-auto aspect-[1320/934] w-full max-w-[1120px]">
+              <canvas ref={canvasElementRef} className="h-auto w-full rounded-md border bg-white shadow-sm" />
+            </div>
           </div>
         </CardContent>
       </Card>

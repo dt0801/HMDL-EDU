@@ -89,84 +89,90 @@ export function AdminCertificatesClient() {
         description="Thiết kế template, cấp chứng chỉ và quản lý chứng chỉ đã phát hành."
       />
 
-      <Tabs defaultValue="issued">
-        <TabsList>
+      <Tabs defaultValue="issued" className="min-w-0 space-y-4">
+        <TabsList className="flex h-auto w-fit flex-wrap justify-start gap-1 bg-muted/70 p-1">
           <TabsTrigger value="issued">Đã cấp</TabsTrigger>
           <TabsTrigger value="templates">Template</TabsTrigger>
           <TabsTrigger value="issue">Cấp chứng chỉ</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="issued">
-          <Card>
+        <TabsContent value="issued" className="mt-0 focus-visible:outline-none">
+          <Card className="overflow-hidden">
             <CardContent className="p-4 sm:p-6">
               {isLoading ? (
-                <Skeleton className="h-48 w-full" />
+                <div className="space-y-3">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-3/4" />
+                </div>
               ) : !data || data.length === 0 ? (
                 <EmptyState icon={Award} title="Chưa có chứng chỉ" />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Số chứng chỉ</TableHead>
-                      <TableHead>Học viên</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Khóa học</TableHead>
-                      <TableHead>Template</TableHead>
-                      <TableHead>Ngày cấp</TableHead>
-                      <TableHead className="text-right">Tải</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.map((c) => {
-                      const code = c.certificate_code ?? c.cert_number;
-                      return (
-                        <TableRow key={c.id}>
-                          <TableCell className="font-medium">
-                            <div className="space-y-1">
-                              <span>{code}</span>
-                              <Button asChild variant="link" size="sm" className="h-auto p-0 text-xs">
-                                <Link href={`/verify/${encodeURIComponent(code)}`} target="_blank">
-                                  Verify <ExternalLink className="ml-1 h-3 w-3" />
-                                </Link>
-                              </Button>
-                            </div>
-                          </TableCell>
-                          <TableCell>{c.student?.full_name ?? "—"}</TableCell>
-                          <TableCell className="text-muted-foreground">{c.student?.email ?? "—"}</TableCell>
-                          <TableCell>{c.course?.title ?? "—"}</TableCell>
-                          <TableCell>
-                            {c.template ? <Badge variant="secondary">{c.template.name}</Badge> : "Mặc định"}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {formatDateTime(c.issued_at)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <CertificateDownloadActions
-                              certificateId={c.id}
-                              pdfUrl={c.pdf_url}
-                              imageUrl={c.image_url}
-                              templateJSON={c.template?.canvas_json}
-                              width={c.template?.width}
-                              height={c.template?.height}
-                              data={{
-                                studentName: c.student?.full_name ?? "Học viên",
-                                courseName: c.course?.title ?? "Khóa học",
-                                issuedDate: formatDate(c.issued_at),
-                                certificateCode: code,
-                              }}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Số chứng chỉ</TableHead>
+                        <TableHead>Học viên</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Khóa học</TableHead>
+                        <TableHead>Template</TableHead>
+                        <TableHead>Ngày cấp</TableHead>
+                        <TableHead className="text-right">Tải</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.map((c) => {
+                        const code = c.certificate_code ?? c.cert_number;
+                        return (
+                          <TableRow key={c.id}>
+                            <TableCell className="font-medium">
+                              <div className="space-y-1">
+                                <span>{code}</span>
+                                <Button asChild variant="link" size="sm" className="h-auto p-0 text-xs">
+                                  <Link href={`/verify/${encodeURIComponent(code)}`} target="_blank">
+                                    Verify <ExternalLink className="ml-1 h-3 w-3" />
+                                  </Link>
+                                </Button>
+                              </div>
+                            </TableCell>
+                            <TableCell>{c.student?.full_name ?? "—"}</TableCell>
+                            <TableCell className="text-muted-foreground">{c.student?.email ?? "—"}</TableCell>
+                            <TableCell className="min-w-[220px]">{c.course?.title ?? "—"}</TableCell>
+                            <TableCell>
+                              {c.template ? <Badge variant="secondary">{c.template.name}</Badge> : "Mặc định"}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {formatDateTime(c.issued_at)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <CertificateDownloadActions
+                                certificateId={c.id}
+                                pdfUrl={c.pdf_url}
+                                imageUrl={c.image_url}
+                                templateJSON={c.template?.canvas_json}
+                                width={c.template?.width}
+                                height={c.template?.height}
+                                data={{
+                                  studentName: c.student?.full_name ?? "Học viên",
+                                  courseName: c.course?.title ?? "Khóa học",
+                                  issuedDate: formatDate(c.issued_at),
+                                  certificateCode: code,
+                                }}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="templates" className="space-y-4">
+        <TabsContent value="templates" className="mt-0 space-y-4 focus-visible:outline-none">
           <CertificateTemplateDesigner
             courses={courses.map((course) => ({ id: course.id, title: course.title }))}
             isSaving={createTemplate.isPending}
@@ -176,7 +182,7 @@ export function AdminCertificatesClient() {
             }}
           />
 
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle className="text-base">Template đã lưu</CardTitle>
             </CardHeader>
@@ -186,41 +192,43 @@ export function AdminCertificatesClient() {
               ) : templates.length === 0 ? (
                 <EmptyState icon={Award} title="Chưa có template" />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tên mẫu</TableHead>
-                      <TableHead>Khóa học</TableHead>
-                      <TableHead>Kích thước</TableHead>
-                      <TableHead>Ngày tạo</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {templates.map((template) => (
-                      <TableRow key={template.id}>
-                        <TableCell className="font-medium">{template.name}</TableCell>
-                        <TableCell>{template.course?.title ?? "Dùng chung"}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {template.width} x {template.height}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDateTime(template.created_at)}
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tên mẫu</TableHead>
+                        <TableHead>Khóa học</TableHead>
+                        <TableHead>Kích thước</TableHead>
+                        <TableHead>Ngày tạo</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {templates.map((template) => (
+                        <TableRow key={template.id}>
+                          <TableCell className="font-medium">{template.name}</TableCell>
+                          <TableCell>{template.course?.title ?? "Dùng chung"}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {template.width} x {template.height}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {formatDateTime(template.created_at)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="issue">
+        <TabsContent value="issue" className="mt-0 focus-visible:outline-none">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Cấp chứng chỉ thủ công</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end">
+            <CardContent className="grid gap-4 lg:grid-cols-3">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Học viên</label>
                 <Select value={studentId} onValueChange={setStudentId}>
@@ -276,7 +284,12 @@ export function AdminCertificatesClient() {
                 </Select>
               </div>
 
-              <Button type="button" onClick={handleIssue} disabled={issueCertificate.isPending}>
+              <Button
+                type="button"
+                className="justify-self-start"
+                onClick={handleIssue}
+                disabled={!studentId || !courseId || issueCertificate.isPending}
+              >
                 {issueCertificate.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
