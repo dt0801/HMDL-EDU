@@ -2,6 +2,7 @@
 
 import { CalendarClock, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/layout/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -10,20 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { LiveSessionWithDetails } from "@/hooks/useLiveSessions";
 import { formatDateTime } from "@/lib/utils";
 
-function splitSessions(sessions: LiveSessionWithDetails[]) {
-  const now = Date.now();
-  const upcoming: LiveSessionWithDetails[] = [];
-  const past: LiveSessionWithDetails[] = [];
-
-  for (const session of sessions) {
-    if (new Date(session.scheduled_start_at).getTime() >= now) {
-      upcoming.push(session);
-    } else {
-      past.push(session);
-    }
-  }
-
-  return { upcoming, past };
+function getSessionEndMs(session: Pick<LiveSessionWithDetails, "scheduled_start_at" | "duration_minutes">) {
+  return new Date(session.scheduled_start_at).getTime() + session.duration_minutes * 60_000;
 }
 
 function SessionGrid({
@@ -105,7 +94,22 @@ export function StudentLiveSessionsList({
   emptyTitle: string;
   emptyDescription: string;
 }) {
-  if (sessions.length === 0) {
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const activeSessions = useMemo(
+    () =>
+      sessions
+        .filter((session) => getSessionEndMs(session) > nowMs)
+        .sort((a, b) => new Date(a.scheduled_start_at).getTime() - new Date(b.scheduled_start_at).getTime()),
+    [nowMs, sessions]
+  );
+
+  if (activeSessions.length === 0) {
     return (
       <EmptyState
         icon={CalendarClock}
@@ -120,12 +124,9 @@ export function StudentLiveSessionsList({
     );
   }
 
-  const { upcoming, past } = splitSessions(sessions);
-
   return (
     <div className="space-y-6">
-      <SessionGrid title="Sắp diễn ra" sessions={upcoming} showCourse={showCourse} />
-      <SessionGrid title="Đã qua" sessions={past} showCourse={showCourse} />
+      <SessionGrid title="Sắp diễn ra" sessions={activeSessions} showCourse={showCourse} />
     </div>
   );
 }

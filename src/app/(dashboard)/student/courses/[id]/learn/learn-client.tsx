@@ -12,7 +12,7 @@ import {
   Video,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { CertificateDownloadActions } from "@/components/certificates/certificate-download-actions";
@@ -42,6 +42,10 @@ import { createClient } from "@/lib/supabase/client";
 import { cn, formatDate, formatDateTime, formatDuration } from "@/lib/utils";
 import type { Lesson } from "@/types/database.types";
 
+function getLiveSessionEndMs(session: { scheduled_start_at: string; duration_minutes: number }) {
+  return new Date(session.scheduled_start_at).getTime() + session.duration_minutes * 60_000;
+}
+
 export function LearnClient({ courseId, studentId }: { courseId: string; studentId: string }) {
   const supabase = useMemo(() => createClient(), []);
   const { data: course } = useCourse(courseId);
@@ -64,6 +68,12 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
 
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [openingDocumentId, setOpeningDocumentId] = useState<string | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const current: Lesson | undefined = useMemo(
     () => publishedLessons.find((lesson) => lesson.id === currentId) ?? publishedLessons[0],
@@ -78,13 +88,17 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
     () => documents.filter((document) => document.lesson_id == null),
     [documents]
   );
+  const activeLiveSessions = useMemo(
+    () => liveSessions.filter((session) => getLiveSessionEndMs(session) > nowMs),
+    [liveSessions, nowMs]
+  );
   const currentLessonSessions = useMemo(
-    () => liveSessions.filter((session) => session.lesson_id === current?.id),
-    [current?.id, liveSessions]
+    () => activeLiveSessions.filter((session) => session.lesson_id === current?.id),
+    [activeLiveSessions, current?.id]
   );
   const courseLevelSessions = useMemo(
-    () => liveSessions.filter((session) => session.lesson_id == null),
-    [liveSessions]
+    () => activeLiveSessions.filter((session) => session.lesson_id == null),
+    [activeLiveSessions]
   );
 
   const { data: resolvedSrc, isFetching: srcLoading } = useQuery({
