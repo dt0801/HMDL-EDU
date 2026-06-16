@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, UploadCloud, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -86,8 +86,8 @@ export function LessonDialog({
   const {
     register,
     handleSubmit,
+    control,
     setValue,
-    watch,
     reset,
     formState: { errors },
   } = useForm<LessonInput>({
@@ -112,13 +112,12 @@ export function LessonDialog({
         duration_seconds: lesson?.duration_seconds ?? null,
         is_published: lesson?.is_published ?? true,
       });
-      setUploadProgress(null);
     }
   }, [open, lesson, reset]);
 
-  const type = watch("type");
-  const isPublished = watch("is_published");
-  const contentUrl = watch("content_url") ?? "";
+  const type = useWatch({ control, name: "type" });
+  const isPublished = useWatch({ control, name: "is_published" });
+  const contentUrl = useWatch({ control, name: "content_url" }) ?? "";
   const hasUploadedFile = contentUrl !== "" && !isExternalUrl(contentUrl);
 
   const acceptByType: Record<LessonType, string | undefined> = {

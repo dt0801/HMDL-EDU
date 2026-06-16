@@ -13,7 +13,7 @@ export async function signInAction(input: SignInInput): Promise<SignInResult> {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ" };
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
     password: parsed.data.password,
@@ -27,7 +27,7 @@ export async function signInAction(input: SignInInput): Promise<SignInResult> {
 }
 
 export async function signOutAction() {
-  const supabase = createClient();
+  const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
 }

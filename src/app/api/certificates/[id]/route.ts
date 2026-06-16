@@ -1,4 +1,6 @@
-import { Document, Page, StyleSheet, Text, View, renderToStream } from "@react-pdf/renderer";
+import { join } from "node:path";
+
+import { Document, Font, Page, StyleSheet, Text, View, renderToStream } from "@react-pdf/renderer";
 import { NextResponse } from "next/server";
 import React from "react";
 
@@ -6,11 +8,31 @@ import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
+const CERT_FONT = "Noto Sans";
+
+Font.register({
+  family: CERT_FONT,
+  fonts: [
+    {
+      src: join(process.cwd(), "public/fonts/noto-sans-vietnamese-400-normal.woff"),
+      fontWeight: 400,
+    },
+    {
+      src: join(process.cwd(), "public/fonts/noto-sans-vietnamese-600-normal.woff"),
+      fontWeight: 600,
+    },
+    {
+      src: join(process.cwd(), "public/fonts/noto-sans-vietnamese-700-normal.woff"),
+      fontWeight: 700,
+    },
+  ],
+});
+
 const styles = StyleSheet.create({
   page: {
     padding: 60,
     backgroundColor: "#ffffff",
-    fontFamily: "Helvetica",
+    fontFamily: CERT_FONT,
   },
   border: {
     borderWidth: 4,
@@ -61,22 +83,14 @@ function CertificateDoc(props: CertificateProps) {
           { style: styles.header },
           React.createElement(Text, { style: styles.brand }, "HMDL-EDU"),
           React.createElement(Text, { style: styles.title }, "CHỨNG CHỈ HOÀN THÀNH"),
-          React.createElement(
-            Text,
-            { style: styles.subtitle },
-            "Đào tạo nội bộ - Bệnh viện HMDL"
-          )
+          React.createElement(Text, { style: styles.subtitle }, "Đào tạo nội bộ - Bệnh viện HMDL")
         ),
         React.createElement(
           View,
           { style: styles.body },
           React.createElement(Text, { style: styles.awardedTo }, "Chứng nhận"),
           React.createElement(Text, { style: styles.recipient }, props.recipient),
-          React.createElement(
-            Text,
-            { style: styles.forCompletion },
-            "đã hoàn thành xuất sắc khóa học"
-          ),
+          React.createElement(Text, { style: styles.forCompletion }, "đã hoàn thành xuất sắc khóa học"),
           React.createElement(Text, { style: styles.course }, props.course)
         ),
         React.createElement(
@@ -91,7 +105,7 @@ function CertificateDoc(props: CertificateProps) {
 }
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   type CertRow = {
     id: string;

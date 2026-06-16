@@ -1,36 +1,24 @@
+import { getCloudinaryEnv } from "@/lib/env";
+
 type UploadKind = "pdf" | "png";
 
 let configured = false;
 
-function assertCloudinaryEnv() {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
-
-  if (!cloudName || !apiKey || !apiSecret) {
-    throw new Error(
-      "Thiếu cấu hình Cloudinary. Cần CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY và CLOUDINARY_API_SECRET."
-    );
-  }
-
-  return { cloudName, apiKey, apiSecret };
-}
-
 async function getCloudinary() {
   const { v2: cloudinary } = await import("cloudinary");
-  const env = assertCloudinaryEnv();
+  const env = getCloudinaryEnv();
 
   if (!configured) {
     cloudinary.config({
-      cloud_name: env.cloudName,
-      api_key: env.apiKey,
-      api_secret: env.apiSecret,
+      cloud_name: env.CLOUDINARY_CLOUD_NAME,
+      api_key: env.CLOUDINARY_API_KEY,
+      api_secret: env.CLOUDINARY_API_SECRET,
       secure: true,
     });
     configured = true;
   }
 
-  return cloudinary;
+  return { cloudinary, folder: env.CLOUDINARY_FOLDER ?? "hmdl-edu/certificates" };
 }
 
 export async function uploadCertificateAsset(input: {
@@ -38,8 +26,7 @@ export async function uploadCertificateAsset(input: {
   certificateCode: string;
   kind: UploadKind;
 }) {
-  const cloudinary = await getCloudinary();
-  const folder = process.env.CLOUDINARY_FOLDER || "hmdl-edu/certificates";
+  const { cloudinary, folder } = await getCloudinary();
   const resourceType = input.kind === "pdf" ? "raw" : "image";
   const publicId = `${input.certificateCode}-${input.kind}`.replace(/[^a-zA-Z0-9-_]/g, "-");
 
@@ -64,4 +51,3 @@ export async function uploadCertificateAsset(input: {
     stream.end(input.buffer);
   });
 }
-

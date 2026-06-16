@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import {
   assertCourseManagementAccess,
   assertSessionManagementAccess,
+  cleanupExpiredLiveSessions,
   normalizeSessionTime,
   requireAuthenticatedProfile,
 } from "@/lib/live-sessions/server";
@@ -55,6 +56,7 @@ export async function PATCH(
   const input = parsed.data;
   const courseAccess = await assertCourseManagementAccess(input.course_id, authResult.profile);
   if ("response" in courseAccess) return courseAccess.response;
+  await cleanupExpiredLiveSessions(sessionAccess.service, authResult.profile).catch(() => undefined);
 
   // Guard: prevent overlapping sessions (exclude this session).
   try {

@@ -19,7 +19,7 @@ const ROLE_HOME: Record<UserRole, string> = {
 const SHOW_DEMO_ACCOUNTS = process.env.NODE_ENV !== "production";
 
 export default async function LoginPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

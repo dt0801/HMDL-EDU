@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types/database.types";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

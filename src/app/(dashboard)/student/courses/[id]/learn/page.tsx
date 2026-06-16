@@ -8,7 +8,7 @@ export const metadata = { title: "Học bài" };
 
 export default async function LearnPage({ params }: { params: { id: string } }) {
   if (!params.id) notFound();
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

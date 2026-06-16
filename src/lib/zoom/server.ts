@@ -1,8 +1,12 @@
+import { getZoomEnv } from "@/lib/env";
+
 const ZOOM_OAUTH_URL = "https://zoom.us/oauth/token";
 const ZOOM_API_BASE_URL = "https://api.zoom.us/v2";
+const TOKEN_REFRESH_BUFFER_MS = 60_000;
 
 type ZoomTokenResponse = {
   access_token: string;
+  expires_in?: number;
 };
 
 type ZoomMeetingPayload = {
@@ -29,22 +33,24 @@ export class ZoomApiError extends Error {
   }
 }
 
-function getZoomConfig() {
-  const accountId = process.env.ZOOM_ACCOUNT_ID;
-  const clientId = process.env.ZOOM_CLIENT_ID;
-  const clientSecret = process.env.ZOOM_CLIENT_SECRET;
-  const hostUserId = process.env.ZOOM_HOST_USER_ID;
+let cachedToken: { accessToken: string; expiresAt: number } | null = null;
 
-  if (!accountId || !clientId || !clientSecret || !hostUserId) {
-    throw new Error(
-      "Thiếu cấu hình Zoom trên server. Cần ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET và ZOOM_HOST_USER_ID."
-    );
-  }
+function getZoomConfig() {
+  const {
+    ZOOM_ACCOUNT_ID: accountId,
+    ZOOM_CLIENT_ID: clientId,
+    ZOOM_CLIENT_SECRET: clientSecret,
+    ZOOM_HOST_USER_ID: hostUserId,
+  } = getZoomEnv();
 
   return { accountId, clientId, clientSecret, hostUserId };
 }
 
 async function getZoomAccessToken() {
+  if (cachedToken && cachedToken.expiresAt - TOKEN_REFRESH_BUFFER_MS > Date.now()) {
+    return cachedToken.accessToken;
+  }
+
   const { accountId, clientId, clientSecret } = getZoomConfig();
   const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
   const url = new URL(ZOOM_OAUTH_URL);
@@ -65,6 +71,11 @@ async function getZoomAccessToken() {
   }
 
   const data = (await response.json()) as ZoomTokenResponse;
+  cachedToken = {
+    accessToken: data.access_token,
+    expiresAt: Date.now() + (data.expires_in ?? 3600) * 1000,
+  };
+
   return data.access_token;
 }
 

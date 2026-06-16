@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { requireAdminAndService } from "@/lib/auth/server";
 import { logAuditEvent } from "@/lib/audit/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
@@ -12,34 +12,8 @@ const createSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return NextResponse.json(
-      { error: "Thiếu cấu hình SUPABASE_SERVICE_ROLE_KEY trên server." },
-      { status: 500 }
-    );
-  }
-
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
-  }
-
-  const { data: profile, error: profileErr } = await supabase
-    .from("profiles")
-    .select("id, role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profileErr) {
-    return NextResponse.json({ error: profileErr.message }, { status: 500 });
-  }
-  if (profile?.role !== "admin") {
-    return NextResponse.json({ error: "Chỉ admin mới được ghi danh." }, { status: 403 });
-  }
+  const auth = await requireAdminAndService("Chỉ admin mới được ghi danh.");
+  if ("response" in auth) return auth.response;
 
   let body: unknown;
   try {
@@ -57,9 +31,8 @@ export async function POST(request: Request) {
   }
 
   const input = parsed.data;
-  const service = createServiceClient();
+  const service = auth.service;
 
-  // prevent duplicates
   const { data: existing, error: existErr } = await service
     .from("enrollments")
     .select("id")
@@ -89,7 +62,7 @@ export async function POST(request: Request) {
   }
 
   await logAuditEvent(service, {
-    actor_id: profile.id,
+    actor_id: auth.profile.id,
     action: "enrollment.create",
     entity_type: "enrollment",
     entity_id: enrollment.id,
@@ -101,4 +74,3 @@ export async function POST(request: Request) {
 
   return NextResponse.json(enrollment, { status: 201 });
 }
-

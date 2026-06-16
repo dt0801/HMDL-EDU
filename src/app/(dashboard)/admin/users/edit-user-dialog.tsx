@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -73,8 +73,8 @@ export function EditUserDialog({
   const {
     register,
     handleSubmit,
+    control,
     setValue,
-    watch,
     reset,
     formState: { errors },
   } = useForm<FormInput>({
@@ -82,9 +82,9 @@ export function EditUserDialog({
     defaultValues,
   });
 
-  const role = watch("role");
-  const departmentId = watch("department_id");
-  const isActive = watch("is_active");
+  const role = useWatch({ control, name: "role" });
+  const departmentId = useWatch({ control, name: "department_id" });
+  const isActive = useWatch({ control, name: "is_active" });
 
   useEffect(() => {
     reset(defaultValues);

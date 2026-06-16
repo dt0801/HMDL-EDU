@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import {
   assertCourseManagementAccess,
+  cleanupExpiredLiveSessions,
   normalizeSessionTime,
   requireAuthenticatedProfile,
 } from "@/lib/live-sessions/server";
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
   if ("response" in accessResult) return accessResult.response;
 
   const { service } = accessResult;
+  await cleanupExpiredLiveSessions(service, authResult.profile).catch(() => undefined);
 
   // Guard: prevent overlapping sessions (single shared host across system).
   try {

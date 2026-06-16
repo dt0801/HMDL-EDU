@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useEffect } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -54,7 +54,6 @@ export function QuestionEditor({
     handleSubmit,
     control,
     setValue,
-    watch,
     reset,
     formState: { errors },
   } = useForm<QuestionInput>({
@@ -72,8 +71,8 @@ export function QuestionEditor({
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: "answers" });
-  const type = watch("type");
-  const answers = watch("answers");
+  const type = useWatch({ control, name: "type" });
+  const answers = useWatch({ control, name: "answers" });
 
   useEffect(() => {
     if (!open) return;

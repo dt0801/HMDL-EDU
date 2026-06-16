@@ -5,7 +5,7 @@ import { ArrowLeft, BookOpen, Download, FileUp, Loader2, Pencil, Plus, Trash2 } 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/layout/empty-state";
@@ -75,8 +75,8 @@ export function NewExamForm({
   const {
     register,
     handleSubmit,
+    control,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<ExamInput>({
     resolver: zodResolver(examSchema),
@@ -90,7 +90,7 @@ export function NewExamForm({
     },
   });
 
-  const isPublished = watch("is_published");
+  const isPublished = useWatch({ control, name: "is_published" });
 
   const activeQuestions = contentMode === "upload" ? uploadQuestions : draftQuestions;
   const validQuestions = useMemo(() => {

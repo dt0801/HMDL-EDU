@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { requireAdminAndService } from "@/lib/auth/server";
 import { logAuditEvent } from "@/lib/audit/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
@@ -46,7 +47,11 @@ async function resolveCertificateTemplate(
   return globalTemplate?.id ?? null;
 }
 
-async function ensureCertificate(service: ReturnType<typeof createServiceClient>, studentId: string, courseId: string) {
+async function ensureCertificate(
+  service: ReturnType<typeof createServiceClient>,
+  studentId: string,
+  courseId: string
+) {
   const { data: existing } = await service
     .from("certificates")
     .select("id")
@@ -72,34 +77,8 @@ async function ensureCertificate(service: ReturnType<typeof createServiceClient>
 }
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return NextResponse.json(
-      { error: "Thiếu cấu hình SUPABASE_SERVICE_ROLE_KEY trên server." },
-      { status: 500 }
-    );
-  }
-
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
-  }
-
-  const { data: profile, error: profileErr } = await supabase
-    .from("profiles")
-    .select("id, role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profileErr) {
-    return NextResponse.json({ error: profileErr.message }, { status: 500 });
-  }
-  if (profile?.role !== "admin") {
-    return NextResponse.json({ error: "Chỉ admin mới được thao tác." }, { status: 403 });
-  }
+  const auth = await requireAdminAndService("Chỉ admin mới được thao tác.");
+  if ("response" in auth) return auth.response;
 
   let body: unknown;
   try {
@@ -117,7 +96,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 
   const enrollmentId = params.id;
-  const service = createServiceClient();
+  const service = auth.service;
 
   const { data: before, error: beforeErr } = await service
     .from("enrollments")
@@ -152,7 +131,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 
   await logAuditEvent(service, {
-    actor_id: profile.id,
+    actor_id: auth.profile.id,
     action: "enrollment.update",
     entity_type: "enrollment",
     entity_id: updated.id,
@@ -168,37 +147,11 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 }
 
 export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return NextResponse.json(
-      { error: "Thiếu cấu hình SUPABASE_SERVICE_ROLE_KEY trên server." },
-      { status: 500 }
-    );
-  }
-
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
-  }
-
-  const { data: profile, error: profileErr } = await supabase
-    .from("profiles")
-    .select("id, role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profileErr) {
-    return NextResponse.json({ error: profileErr.message }, { status: 500 });
-  }
-  if (profile?.role !== "admin") {
-    return NextResponse.json({ error: "Chỉ admin mới được thao tác." }, { status: 403 });
-  }
+  const auth = await requireAdminAndService("Chỉ admin mới được thao tác.");
+  if ("response" in auth) return auth.response;
 
   const enrollmentId = params.id;
-  const service = createServiceClient();
+  const service = auth.service;
 
   const { data: before } = await service
     .from("enrollments")
@@ -212,7 +165,7 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
   }
 
   await logAuditEvent(service, {
-    actor_id: profile.id,
+    actor_id: auth.profile.id,
     action: "enrollment.delete",
     entity_type: "enrollment",
     entity_id: enrollmentId,

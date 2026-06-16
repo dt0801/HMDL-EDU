@@ -7,7 +7,7 @@ import { CertificatesClient } from "./certificates-client";
 export const metadata = { title: "Chứng chỉ của tôi" };
 
 export default async function StudentCertificatesPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

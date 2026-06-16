@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { requireAdminAndService } from "@/lib/auth/server";
 import { uploadCertificateAsset } from "@/lib/certificate/cloudinary";
 import { renderCertificateWithBrowserless } from "@/lib/certificate/server-render";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/utils";
 import type { Json } from "@/types/database.types";
 
@@ -24,6 +24,21 @@ function makeCertificateCode() {
 
 function shouldRenderServerSide() {
   return process.env.CERTIFICATE_RENDER_MODE === "server";
+}
+
+async function withRetry<T>(label: string, task: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await task();
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts) break;
+      await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+    }
+  }
+  const message = lastError instanceof Error ? lastError.message : "Lỗi không xác định";
+  throw new Error(`${label} thất bại sau ${attempts} lần thử: ${message}`);
 }
 
 type StudentRow = {
@@ -56,70 +71,43 @@ async function renderAndUploadCertificate(input: {
   issuedAt: string;
   verifyUrl: string;
 }) {
-  const rendered = await renderCertificateWithBrowserless({
-    templateJSON: input.template.canvas_json,
-    width: input.template.width,
-    height: input.template.height,
-    verifyUrl: input.verifyUrl,
-    data: {
-      studentName: input.student.full_name,
-      courseName: input.course.title,
-      issuedDate: formatDate(input.issuedAt),
-      certificateCode: input.certificateCode,
-    },
-  });
+  const rendered = await withRetry("Render chứng chỉ bằng Browserless", () =>
+    renderCertificateWithBrowserless({
+      templateJSON: input.template.canvas_json,
+      width: input.template.width,
+      height: input.template.height,
+      verifyUrl: input.verifyUrl,
+      data: {
+        studentName: input.student.full_name,
+        courseName: input.course.title,
+        issuedDate: formatDate(input.issuedAt),
+        certificateCode: input.certificateCode,
+      },
+    })
+  );
 
   const [imageUrl, pdfUrl] = await Promise.all([
-    uploadCertificateAsset({
-      buffer: rendered.pngBuffer,
-      certificateCode: input.certificateCode,
-      kind: "png",
-    }),
-    uploadCertificateAsset({
-      buffer: rendered.pdfBuffer,
-      certificateCode: input.certificateCode,
-      kind: "pdf",
-    }),
+    withRetry("Upload PNG chứng chỉ", () =>
+      uploadCertificateAsset({
+        buffer: rendered.pngBuffer,
+        certificateCode: input.certificateCode,
+        kind: "png",
+      })
+    ),
+    withRetry("Upload PDF chứng chỉ", () =>
+      uploadCertificateAsset({
+        buffer: rendered.pdfBuffer,
+        certificateCode: input.certificateCode,
+        kind: "pdf",
+      })
+    ),
   ]);
 
   return { imageUrl, pdfUrl };
 }
 
-async function requireAdmin() {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { response: NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 }) };
-  }
-
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("id, role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (error) {
-    return { response: NextResponse.json({ error: error.message }, { status: 500 }) };
-  }
-  if (profile?.role !== "admin") {
-    return { response: NextResponse.json({ error: "Chỉ admin mới được cấp chứng chỉ." }, { status: 403 }) };
-  }
-
-  return { profile };
-}
-
 export async function POST(request: Request) {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return NextResponse.json(
-      { error: "Thiếu cấu hình SUPABASE_SERVICE_ROLE_KEY trên server." },
-      { status: 500 }
-    );
-  }
-
-  const auth = await requireAdmin();
+  const auth = await requireAdminAndService("Chỉ admin mới được cấp chứng chỉ.");
   if ("response" in auth) return auth.response;
 
   let body: unknown;
@@ -138,7 +126,7 @@ export async function POST(request: Request) {
   }
 
   const input = parsed.data;
-  const service = createServiceClient();
+  const service = auth.service;
 
   const [{ data: student }, { data: course }, { data: template }] = await Promise.all([
     service.from("profiles").select("id, full_name").eq("id", input.studentId).eq("role", "student").maybeSingle(),
@@ -185,14 +173,21 @@ export async function POST(request: Request) {
 
   let renderedUrls: { pdfUrl: string; imageUrl: string } | null = null;
   if (shouldRender && effectiveTemplate) {
-    renderedUrls = await renderAndUploadCertificate({
-      template: effectiveTemplate,
-      student: student as unknown as StudentRow,
-      course: course as unknown as CourseRow,
-      certificateCode,
-      issuedAt,
-      verifyUrl: buildVerifyUrl(request, certificateCode),
-    });
+    try {
+      renderedUrls = await renderAndUploadCertificate({
+        template: effectiveTemplate,
+        student: student as unknown as StudentRow,
+        course: course as unknown as CourseRow,
+        certificateCode,
+        issuedAt,
+        verifyUrl: buildVerifyUrl(request, certificateCode),
+      });
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Không render/upload được chứng chỉ." },
+        { status: 502 }
+      );
+    }
   }
 
   if (existing) {

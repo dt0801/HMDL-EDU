@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, UploadCloud, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -75,8 +75,8 @@ export function DocumentDialog({
   const {
     register,
     handleSubmit,
+    control,
     setValue,
-    watch,
     reset,
     formState: { errors },
   } = useForm<CourseDocumentInput>({
@@ -113,13 +113,13 @@ export function DocumentDialog({
     });
   }, [courses, defaultCourseId, document, open, reset]);
 
-  const courseId = watch("course_id");
-  const lessonId = watch("lesson_id");
-  const audience = watch("audience");
-  const documentKind = watch("document_kind");
-  const isPublished = watch("is_published");
-  const fileUrl = watch("file_url") ?? "";
-  const title = watch("title") ?? "";
+  const courseId = useWatch({ control, name: "course_id" });
+  const lessonId = useWatch({ control, name: "lesson_id" });
+  const audience = useWatch({ control, name: "audience" });
+  const documentKind = useWatch({ control, name: "document_kind" });
+  const isPublished = useWatch({ control, name: "is_published" });
+  const fileUrl = useWatch({ control, name: "file_url" }) ?? "";
+  const title = useWatch({ control, name: "title" }) ?? "";
   const hasUploadedFile = fileUrl !== "" && !isExternalUrl(fileUrl);
   const { data: lessons = [] } = useLessons(courseId || undefined);
 

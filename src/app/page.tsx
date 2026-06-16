@@ -10,7 +10,7 @@ const ROLE_HOME: Record<UserRole, string> = {
 };
 
 export default async function HomePage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -11,7 +11,7 @@ import { InstructorCoursesGrid } from "./courses-grid";
 export const metadata = { title: "Khóa học" };
 
 export default async function InstructorCoursesPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

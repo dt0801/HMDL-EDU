@@ -7,7 +7,7 @@ import { BrowseCoursesClient } from "./browse-courses-client";
 export const metadata = { title: "Khám phá khóa học" };
 
 export default async function StudentCoursesPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

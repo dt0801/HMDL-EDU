@@ -14,7 +14,7 @@ export default async function ExamResultPage({
   searchParams: { attempt?: string };
 }) {
   if (!params.id || !searchParams.attempt) notFound();
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

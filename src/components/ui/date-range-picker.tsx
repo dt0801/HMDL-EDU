@@ -28,13 +28,15 @@ export function DateRangePicker({
 }) {
   const [open, setOpen] = useState(false);
 
+  const from = value?.from;
+  const to = value?.to;
   const label = useMemo(() => {
-    if (value?.from && value?.to) {
-      return `${formatDateMaybe(value.from)} - ${formatDateMaybe(value.to)}`;
+    if (from && to) {
+      return `${formatDateMaybe(from)} - ${formatDateMaybe(to)}`;
     }
-    if (value?.from) return formatDateMaybe(value.from);
+    if (from) return formatDateMaybe(from);
     return "Chọn khoảng ngày";
-  }, [value?.from, value?.to]);
+  }, [from, to]);
 
   const presets = useMemo(
     () => [
@@ -97,4 +99,3 @@ export function DateRangePicker({
     </Popover>
   );
 }
-

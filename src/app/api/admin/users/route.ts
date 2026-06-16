@@ -1,42 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAndService } from "@/lib/auth/server";
 import { createUserSchema } from "@/lib/validations/user.schema";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return NextResponse.json(
-      { error: "Thiếu cấu hình SUPABASE_SERVICE_ROLE_KEY trên server." },
-      { status: 500 }
-    );
-  }
-
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
-  }
-
-  const { data: profile, error: profileErr } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profileErr) {
-    return NextResponse.json({ error: profileErr.message }, { status: 500 });
-  }
-  if (profile?.role !== "admin") {
-    return NextResponse.json(
-      { error: "Chỉ quản trị viên mới được tạo người dùng." },
-      { status: 403 }
-    );
-  }
+  const auth = await requireAdminAndService("Chỉ quản trị viên mới được tạo người dùng.");
+  if ("response" in auth) return auth.response;
 
   let body: unknown;
   try {
@@ -55,10 +26,8 @@ export async function POST(request: Request) {
 
   const input = parsed.data;
   const departmentId = input.department_id ?? null;
+  const service = auth.service;
 
-  const service = createServiceClient();
-
-  // Resolve tên phòng ban (mirror text vào profiles.department)
   let departmentName: string | null = input.department ?? null;
   if (departmentId && !departmentName) {
     const { data: dept } = await service
@@ -69,7 +38,6 @@ export async function POST(request: Request) {
     departmentName = dept?.name ?? null;
   }
 
-  // 1) Tạo auth user (trigger handle_new_user sẽ tự insert profile cơ bản)
   const created = await service.auth.admin.createUser({
     email: input.email,
     password: input.password,
@@ -89,8 +57,6 @@ export async function POST(request: Request) {
   }
 
   const newUserId = created.data.user.id;
-
-  // 2) Cập nhật/đảm bảo profile có department_id, role, is_active đúng
   const { error: upsertErr } = await service.from("profiles").upsert(
     {
       id: newUserId,
@@ -105,7 +71,6 @@ export async function POST(request: Request) {
   );
 
   if (upsertErr) {
-    // Rollback auth user nếu profile lỗi để tránh dữ liệu treo.
     await service.auth.admin.deleteUser(newUserId).catch(() => undefined);
     return NextResponse.json({ error: upsertErr.message }, { status: 500 });
   }

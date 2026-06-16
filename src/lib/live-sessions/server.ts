@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { ZoomApiError, deleteZoomMeeting } from "@/lib/zoom/server";
 import type { LiveSession, Profile, UserRole } from "@/types/database.types";
 
 type RequestProfile = Pick<Profile, "id" | "role" | "full_name">;
 type ServiceClient = ReturnType<typeof createServiceClient>;
 type CourseRecord = { id: string; title: string; instructor_id: string | null };
+type CleanupCandidate = LiveSession & {
+  course: { instructor_id: string | null } | null;
+};
 
 type AuthProfileResult =
   | { profile: RequestProfile }
@@ -26,7 +30,7 @@ type SessionAccessResult =
 export async function requireAuthenticatedProfile(
   allowedRoles?: UserRole[]
 ): Promise<AuthProfileResult> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -154,4 +158,42 @@ export async function assertSessionManagementAccess(
 
 export function normalizeSessionTime(value: string) {
   return new Date(value).toISOString();
+}
+
+export function getLiveSessionEndMs(session: Pick<LiveSession, "scheduled_start_at" | "duration_minutes">) {
+  return new Date(session.scheduled_start_at).getTime() + session.duration_minutes * 60_000;
+}
+
+export async function cleanupExpiredLiveSessions(
+  service: ServiceClient,
+  profile?: Pick<RequestProfile, "id" | "role">
+) {
+  const now = Date.now();
+  const { data, error } = await service
+    .from("live_sessions")
+    .select("*, course:courses(instructor_id)")
+    .eq("status", "scheduled")
+    .lte("scheduled_start_at", new Date(now).toISOString());
+
+  if (error) throw error;
+
+  const expired = ((data ?? []) as unknown as CleanupCandidate[]).filter((session) => {
+    if (getLiveSessionEndMs(session) > now) return false;
+    if (!profile || profile.role === "admin") return true;
+    return session.course?.instructor_id === profile.id;
+  });
+
+  for (const session of expired) {
+    try {
+      await deleteZoomMeeting(session.zoom_meeting_id);
+    } catch (error) {
+      if (!(error instanceof ZoomApiError) || error.status !== 404) {
+        throw error;
+      }
+    }
+
+    await service.from("live_sessions").delete().eq("id", session.id).throwOnError();
+  }
+
+  return { deleted: expired.length };
 }

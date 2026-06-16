@@ -24,7 +24,7 @@ import {
   Type,
   Video,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/layout/empty-state";
@@ -116,11 +116,8 @@ export function LessonsTab({ courseId }: { courseId: string }) {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Lesson | null>(null);
-  const [order, setOrder] = useState<Lesson[]>([]);
-
-  useEffect(() => {
-    if (data) setOrder(data);
-  }, [data]);
+  const [optimisticOrder, setOptimisticOrder] = useState<Lesson[] | null>(null);
+  const order = optimisticOrder ?? data ?? [];
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -131,10 +128,11 @@ export function LessonsTab({ courseId }: { courseId: string }) {
     const newIdx = order.findIndex((l) => l.id === over.id);
     if (oldIdx === -1 || newIdx === -1) return;
     const next = arrayMove(order, oldIdx, newIdx);
-    setOrder(next);
+    setOptimisticOrder(next);
     reorder.mutate(
       { courseId, orderedIds: next.map((l) => l.id) },
       {
+        onSuccess: () => setOptimisticOrder(null),
         onError: (e) => toast.error(e instanceof Error ? e.message : "Lỗi sắp xếp"),
       }
     );
@@ -163,6 +161,7 @@ export function LessonsTab({ courseId }: { courseId: string }) {
         {
           onSuccess: () => {
             toast.success("Đã thêm bài học");
+            setOptimisticOrder(null);
             setDialogOpen(false);
           },
           onError: (e) => toast.error(e instanceof Error ? e.message : "Lỗi"),

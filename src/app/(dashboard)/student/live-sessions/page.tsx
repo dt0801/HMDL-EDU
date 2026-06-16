@@ -8,7 +8,7 @@ import { StudentLiveSessionsClient } from "./student-live-sessions-client";
 export const metadata = { title: "Lớp học trực tuyến" };
 
 export default async function StudentLiveSessionsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -8,7 +8,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/layout/empty-state";
@@ -31,6 +31,7 @@ import { useCourses } from "@/hooks/useCourses";
 import { useCurrentProfile } from "@/hooks/useAuth";
 import {
   useCancelLiveSession,
+  useCleanupExpiredLiveSessions,
   useCreateLiveSession,
   useLiveSessions,
   useUpdateLiveSession,
@@ -44,12 +45,16 @@ import { LiveSessionDialog } from "./live-session-dialog";
 
 const ALL_COURSES = "__all__";
 
-function isPastSession(session: LiveSessionWithDetails) {
-  return new Date(session.scheduled_start_at).getTime() < Date.now();
+function hasSessionEnded(session: LiveSessionWithDetails, nowMs: number) {
+  return getSessionEndMs(session) <= nowMs;
 }
 
 function toMs(value: string) {
   return new Date(value).getTime();
+}
+
+function getSessionEndMs(session: Pick<LiveSessionWithDetails, "scheduled_start_at" | "duration_minutes">) {
+  return toMs(session.scheduled_start_at) + session.duration_minutes * 60_000;
 }
 
 function formatConflictMessage(conflicts: Array<{ title: string; scheduled_start_at: string }>) {
@@ -118,11 +123,23 @@ export function InstructorLiveSessionsManager({ courseId }: { courseId?: string 
   const createLiveSession = useCreateLiveSession();
   const updateLiveSession = useUpdateLiveSession();
   const cancelLiveSession = useCancelLiveSession();
+  const cleanupExpiredLiveSessions = useCleanupExpiredLiveSessions();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<LiveSessionWithDetails | null>(null);
   const [fromDate, setFromDate] = useState(() => toDateInputValue(new Date()));
   const [toDate, setToDate] = useState(() => toDateInputValue(addDays(new Date(), 90)));
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const cleanupExpired = cleanupExpiredLiveSessions.mutate;
+
+  useEffect(() => {
+    cleanupExpired();
+  }, [cleanupExpired]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const dateRange: DateRange | undefined = useMemo(() => {
     const from = parseDateInputValue(fromDate) ?? undefined;
@@ -148,11 +165,12 @@ export function InstructorLiveSessionsManager({ courseId }: { courseId?: string 
     return [...sessions]
       .filter((s) => {
         if (s.status !== "scheduled") return false;
+        if (hasSessionEnded(s, nowMs)) return false;
         const start = new Date(s.scheduled_start_at).getTime();
         return start >= fromMs && start <= toMs;
       })
       .sort((a, b) => new Date(a.scheduled_start_at).getTime() - new Date(b.scheduled_start_at).getTime());
-  }, [fromDate, sessions, toDate]);
+  }, [fromDate, nowMs, sessions, toDate]);
 
   const groupedSessions = useMemo(() => {
     const map = new Map<string, LiveSessionWithDetails[]>();
@@ -169,6 +187,7 @@ export function InstructorLiveSessionsManager({ courseId }: { courseId?: string 
     const map = new Map<string, LiveSessionWithDetails[]>();
     for (const session of sessions) {
       if (session.status !== "scheduled") continue;
+      if (hasSessionEnded(session, nowMs)) continue;
       const key = toDateInputValue(new Date(session.scheduled_start_at));
       const list = map.get(key) ?? [];
       list.push(session);
@@ -178,7 +197,7 @@ export function InstructorLiveSessionsManager({ courseId }: { courseId?: string 
       list.sort((a, b) => toMs(a.scheduled_start_at) - toMs(b.scheduled_start_at));
     }
     return map;
-  }, [sessions]);
+  }, [nowMs, sessions]);
 
   const focusedDayKey = focusedDay ? toDateInputValue(focusedDay) : null;
   const focusedSessions = focusedDayKey ? sessionsByDay.get(focusedDayKey) ?? [] : [];
@@ -360,7 +379,7 @@ export function InstructorLiveSessionsManager({ courseId }: { courseId?: string 
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {daySessions.map((session) => {
-                        const isPast = isPastSession(session);
+                        const isPast = hasSessionEnded(session, nowMs);
 
                         return (
                           <div
@@ -474,7 +493,7 @@ export function InstructorLiveSessionsManager({ courseId }: { courseId?: string 
                   ) : (
                     <div className="space-y-3">
                       {focusedSessions.map((session) => {
-                        const isPast = isPastSession(session);
+                        const isPast = hasSessionEnded(session, nowMs);
                         return (
                           <div
                             key={session.id}

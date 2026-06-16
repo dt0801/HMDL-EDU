@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAndService } from "@/lib/auth/server";
 import type { Json } from "@/types/database.types";
 
 export const runtime = "nodejs";
@@ -14,38 +14,11 @@ const templateSchema = z.object({
   height: z.coerce.number().int().min(300).max(4000).default(934),
 });
 
-async function requireAdmin() {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { response: NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 }) };
-  }
-
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("id, role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (error) {
-    return { response: NextResponse.json({ error: error.message }, { status: 500 }) };
-  }
-  if (profile?.role !== "admin") {
-    return { response: NextResponse.json({ error: "Chỉ admin mới được thao tác." }, { status: 403 }) };
-  }
-
-  return { profile };
-}
-
 export async function GET() {
-  const auth = await requireAdmin();
+  const auth = await requireAdminAndService("Chỉ admin mới được thao tác.");
   if ("response" in auth) return auth.response;
 
-  const service = createServiceClient();
-  const { data, error } = await service
+  const { data, error } = await auth.service
     .from("certificate_templates")
     .select("*, course:courses(id, title)")
     .eq("is_active", true)
@@ -59,7 +32,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminAndService("Chỉ admin mới được thao tác.");
   if ("response" in auth) return auth.response;
 
   let body: unknown;
@@ -78,8 +51,7 @@ export async function POST(request: Request) {
   }
 
   const input = parsed.data;
-  const service = createServiceClient();
-  const { data, error } = await service
+  const { data, error } = await auth.service
     .from("certificate_templates")
     .insert({
       name: input.name,

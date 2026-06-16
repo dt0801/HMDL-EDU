@@ -151,3 +151,19 @@ export function useCancelLiveSession() {
     },
   });
 }
+
+export function useCleanupExpiredLiveSessions() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () =>
+      apiRequest<{ deleted: number }>("/api/live-sessions/cleanup", {
+        method: "POST",
+      }),
+    onSuccess: (result) => {
+      if (result.deleted > 0) {
+        qc.invalidateQueries({ queryKey: ["live-sessions"] });
+      }
+    },
+  });
+}

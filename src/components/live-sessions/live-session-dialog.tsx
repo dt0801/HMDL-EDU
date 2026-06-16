@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
-import { type SubmitErrorHandler, useForm } from "react-hook-form";
+import { type SubmitErrorHandler, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -52,8 +52,8 @@ export function LiveSessionDialog({
   const {
     register,
     handleSubmit,
+    control,
     reset,
-    watch,
     setValue,
     setFocus,
     formState: { errors },
@@ -71,7 +71,7 @@ export function LiveSessionDialog({
     },
   });
 
-  const scheduledStartAt = watch("scheduled_start_at") ?? "";
+  const scheduledStartAt = useWatch({ control, name: "scheduled_start_at" }) ?? "";
 
   useEffect(() => {
     if (!open) return;

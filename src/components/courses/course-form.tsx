@@ -3,8 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useMemo, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -44,8 +44,8 @@ export function CourseForm({
   const {
     register,
     handleSubmit,
+    control,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<CourseInput>({
     resolver: zodResolver(courseSchema),
@@ -59,15 +59,11 @@ export function CourseForm({
     },
   });
 
-  const category = watch("category");
-  const isPublished = watch("is_published");
-  const requiresEnrollment = watch("requires_enrollment");
-  const thumbnailUrl = watch("thumbnail_url");
+  const category = useWatch({ control, name: "category" });
+  const isPublished = useWatch({ control, name: "is_published" });
+  const requiresEnrollment = useWatch({ control, name: "requires_enrollment" });
+  const thumbnailUrl = useWatch({ control, name: "thumbnail_url" });
   const previewSrc = thumbnailPreview ?? (thumbnailUrl ? thumbnailUrl : null);
-
-  useEffect(() => {
-    setThumbnailPreview(null);
-  }, [thumbnailUrl]);
 
   const uploadThumbnail = async (file: File) => {
     setThumbnailUploading(true);

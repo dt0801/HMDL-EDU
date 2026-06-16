@@ -5,8 +5,8 @@ import { ArrowLeft, BookOpen, CheckCircle2, Circle, Loader2 } from "lucide-react
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useMemo, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -54,8 +54,8 @@ export function NewCourseForm({ instructorId }: { instructorId: string }) {
   const {
     register,
     handleSubmit,
+    control,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<CourseInput>({
     resolver: zodResolver(courseSchema),
@@ -69,18 +69,14 @@ export function NewCourseForm({ instructorId }: { instructorId: string }) {
     },
   });
 
-  const title = watch("title");
-  const description = watch("description");
-  const category = watch("category");
-  const thumbnailUrl = watch("thumbnail_url");
-  const requiresEnrollment = watch("requires_enrollment");
+  const title = useWatch({ control, name: "title" });
+  const description = useWatch({ control, name: "description" });
+  const category = useWatch({ control, name: "category" });
+  const thumbnailUrl = useWatch({ control, name: "thumbnail_url" });
+  const requiresEnrollment = useWatch({ control, name: "requires_enrollment" });
 
   const { data: lessons, isLoading: lessonsLoading } = useLessons(courseId ?? undefined);
   const { data: exams, isLoading: examsLoading } = useExamsByCourse(courseId ?? undefined);
-
-  useEffect(() => {
-    setThumbnailPreview(null);
-  }, [thumbnailUrl]);
 
   const previewSrc = thumbnailPreview ?? (thumbnailUrl ? thumbnailUrl : null);
 

@@ -12,7 +12,7 @@ import {
   Video,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { CertificateDownloadActions } from "@/components/certificates/certificate-download-actions";
@@ -86,10 +86,6 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
     () => liveSessions.filter((session) => session.lesson_id == null),
     [liveSessions]
   );
-
-  useEffect(() => {
-    if (!currentId && publishedLessons[0]) setCurrentId(publishedLessons[0].id);
-  }, [currentId, publishedLessons]);
 
   const { data: resolvedSrc, isFetching: srcLoading } = useQuery({
     queryKey: ["lesson-content-url", current?.id, current?.content_url],

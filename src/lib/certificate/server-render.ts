@@ -1,13 +1,14 @@
 import { readFile } from "node:fs/promises";
-import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 
 import puppeteer from "puppeteer-core";
 import QRCode from "qrcode";
 
 import type { CertificatePlaceholderData } from "@/lib/certificate/placeholders";
+import { getCertificateEnv } from "@/lib/env";
 import type { Json } from "@/types/database.types";
 
-const require = createRequire(import.meta.url);
+const CERT_FONT = "Noto Sans";
 
 type RenderInput = {
   templateJSON: Json;
@@ -18,8 +19,9 @@ type RenderInput = {
 };
 
 function getBrowserlessEndpoint() {
-  const endpoint = process.env.BROWSERLESS_WS_ENDPOINT || process.env.BROWSERLESS_URL;
-  const token = process.env.BROWSERLESS_TOKEN;
+  const env = getCertificateEnv();
+  const endpoint = env.BROWSERLESS_WS_ENDPOINT || env.BROWSERLESS_URL;
+  const token = env.BROWSERLESS_TOKEN;
 
   if (!endpoint) {
     throw new Error("Thiếu BROWSERLESS_WS_ENDPOINT cho server-side certificate render.");
@@ -38,11 +40,44 @@ function jsonForScript(value: unknown) {
 }
 
 async function getFabricScript() {
-  const fabricPath = require.resolve("fabric/dist/fabric.min.js");
+  const fabricPath = fileURLToPath(new URL("../../../node_modules/fabric/dist/index.min.js", import.meta.url));
   return readFile(fabricPath, "utf8");
 }
 
-function buildRenderHtml(input: RenderInput & { fabricScript: string; qrDataUrl: string }) {
+async function getCertificateFontCss() {
+  const fontFiles = [
+    {
+      weight: 400,
+      path: fileURLToPath(new URL("../../../public/fonts/noto-sans-vietnamese-400-normal.woff", import.meta.url)),
+    },
+    {
+      weight: 600,
+      path: fileURLToPath(new URL("../../../public/fonts/noto-sans-vietnamese-600-normal.woff", import.meta.url)),
+    },
+    {
+      weight: 700,
+      path: fileURLToPath(new URL("../../../public/fonts/noto-sans-vietnamese-700-normal.woff", import.meta.url)),
+    },
+  ];
+
+  const rules = await Promise.all(
+    fontFiles.map(async (font) => {
+      const data = await readFile(font.path);
+      return `
+        @font-face {
+          font-family: "${CERT_FONT}";
+          src: url("data:font/woff;base64,${data.toString("base64")}") format("woff");
+          font-weight: ${font.weight};
+          font-style: normal;
+          font-display: block;
+        }`;
+    })
+  );
+
+  return rules.join("\n");
+}
+
+function buildRenderHtml(input: RenderInput & { fabricScript: string; fontCss: string; qrDataUrl: string }) {
   const fabricScript = input.fabricScript.replace(/<\/script/gi, "<\\/script");
 
   return `<!doctype html>
@@ -50,11 +85,13 @@ function buildRenderHtml(input: RenderInput & { fabricScript: string; qrDataUrl:
 <head>
   <meta charset="utf-8" />
   <style>
+    ${input.fontCss}
     @page { size: A4 landscape; margin: 0; }
     html, body {
       margin: 0;
       padding: 0;
       background: #ffffff;
+      font-family: "${CERT_FONT}", Arial, sans-serif;
     }
     #certificate-canvas {
       display: block;
@@ -114,7 +151,7 @@ function buildRenderHtml(input: RenderInput & { fabricScript: string; qrDataUrl:
             width: 230,
             fontSize: 18,
             fill: "#475569",
-            fontFamily: "Arial",
+            fontFamily: "${CERT_FONT}",
             textAlign: "center",
             selectable: false,
             evented: false,
@@ -135,9 +172,11 @@ function buildRenderHtml(input: RenderInput & { fabricScript: string; qrDataUrl:
     });
 
     canvas.loadFromJSON(templateJSON, async () => {
+      await document.fonts.ready;
       canvas.getObjects().forEach((object) => {
         if (["text", "textbox", "i-text"].includes(object.type)) {
           object.set("text", replacePlaceholders(object.text));
+          object.set("fontFamily", "${CERT_FONT}");
         }
       });
 
@@ -151,8 +190,9 @@ function buildRenderHtml(input: RenderInput & { fabricScript: string; qrDataUrl:
 }
 
 export async function renderCertificateWithBrowserless(input: RenderInput) {
-  const [fabricScript, qrDataUrl] = await Promise.all([
+  const [fabricScript, fontCss, qrDataUrl] = await Promise.all([
     getFabricScript(),
+    getCertificateFontCss(),
     QRCode.toDataURL(input.verifyUrl, { margin: 1, width: 180 }),
   ]);
 
@@ -168,7 +208,7 @@ export async function renderCertificateWithBrowserless(input: RenderInput) {
       deviceScaleFactor: 2,
     });
 
-    await page.setContent(buildRenderHtml({ ...input, fabricScript, qrDataUrl }), {
+    await page.setContent(buildRenderHtml({ ...input, fabricScript, fontCss, qrDataUrl }), {
       waitUntil: "networkidle0",
     });
     await page.waitForFunction("window.__CERT_READY__ === true", { timeout: 30_000 });
@@ -195,4 +235,3 @@ export async function renderCertificateWithBrowserless(input: RenderInput) {
     await browser.close();
   }
 }
-

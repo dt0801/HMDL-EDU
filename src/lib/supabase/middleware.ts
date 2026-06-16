@@ -12,11 +12,11 @@ const ROLE_HOME: Record<UserRole, string> = {
   student: "/student/dashboard",
 };
 
-function isPublicPath(pathname: string): boolean {
+export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-function deniedFor(role: UserRole | null, pathname: string): boolean {
+export function deniedFor(role: UserRole | null, pathname: string): boolean {
   if (!role) return true;
   if (pathname.startsWith("/admin")) return role !== "admin";
   if (pathname.startsWith("/instructor")) return role !== "admin" && role !== "instructor";

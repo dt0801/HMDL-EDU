@@ -7,7 +7,7 @@ import { StudentExamsClient } from "./student-exams-client";
 export const metadata = { title: "Thi trắc nghiệm" };
 
 export default async function StudentExamsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
