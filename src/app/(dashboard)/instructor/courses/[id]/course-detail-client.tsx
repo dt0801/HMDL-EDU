@@ -79,7 +79,7 @@ export function CourseDetailClient({ courseId }: { courseId: string }) {
           <TabsTrigger value="students">Học viên</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="info">
+        <TabsContent value="info" forceMount>
           <Card>
             <CardContent className="p-4 sm:p-6">
               <CourseForm
@@ -99,23 +99,23 @@ export function CourseDetailClient({ courseId }: { courseId: string }) {
           </Card>
         </TabsContent>
 
-        <TabsContent value="lessons">
+        <TabsContent value="lessons" forceMount>
           <LessonsTab courseId={course.id} />
         </TabsContent>
 
-        <TabsContent value="live-sessions">
+        <TabsContent value="live-sessions" forceMount>
           <LiveSessionsTab courseId={course.id} />
         </TabsContent>
 
-        <TabsContent value="documents">
+        <TabsContent value="documents" forceMount>
           <DocumentsTab courseId={course.id} />
         </TabsContent>
 
-        <TabsContent value="exams">
+        <TabsContent value="exams" forceMount>
           <ExamsTab courseId={course.id} />
         </TabsContent>
 
-        <TabsContent value="students">
+        <TabsContent value="students" forceMount>
           <StudentsTab courseId={course.id} />
         </TabsContent>
       </Tabs>
