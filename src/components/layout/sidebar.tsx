@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, HeartPulse } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import { NAV_BY_ROLE } from "./nav-config";
 
 export function Sidebar({ role }: { role: UserRole }) {
   const pathname = usePathname();
+  const router = useRouter();
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggle = useUiStore((s) => s.toggleSidebar);
 
@@ -80,6 +81,9 @@ export function Sidebar({ role }: { role: UserRole }) {
                     ) : (
                       <Link
                         href={item.href}
+                        prefetch
+                        onFocus={() => router.prefetch(item.href)}
+                        onMouseEnter={() => router.prefetch(item.href)}
                         className={cn(
                           "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                           isActive

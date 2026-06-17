@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { DocumentsList } from "@/components/documents/documents-list";
+import { useDashboardProfile } from "@/components/providers/dashboard-profile-provider";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -11,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCurrentProfile } from "@/hooks/useAuth";
 import {
   getDocumentKindLabel,
   useStudentDocuments,
@@ -30,8 +30,8 @@ const DOCUMENT_KIND_OPTIONS: CourseDocumentKind[] = [
 ];
 
 export function StudentDocumentsClient() {
-  const { data: profile, isLoading: profileLoading } = useCurrentProfile();
-  const { data: documents = [], isLoading: documentsLoading } = useStudentDocuments(profile?.id);
+  const profile = useDashboardProfile();
+  const { data: documents = [], isLoading: documentsLoading } = useStudentDocuments(profile.id);
   const [selectedKind, setSelectedKind] = useState<string>(ALL_KINDS);
 
   const filteredDocuments = useMemo(() => {
@@ -39,7 +39,7 @@ export function StudentDocumentsClient() {
     return documents.filter((document) => document.document_kind === selectedKind);
   }, [documents, selectedKind]);
 
-  if (profileLoading || documentsLoading) {
+  if (documentsLoading) {
     return (
       <Card>
         <CardContent className="p-6 text-sm text-muted-foreground">

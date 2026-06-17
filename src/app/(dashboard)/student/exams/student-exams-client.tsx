@@ -6,15 +6,17 @@ import { useMemo } from "react";
 
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
+import { useDashboardProfile } from "@/components/providers/dashboard-profile-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStudentExams, useStudentAttempts } from "@/hooks/useExams";
 
-export function StudentExamsClient({ studentId }: { studentId: string }) {
-  const { data: exams, isLoading: examsLoading } = useStudentExams(studentId);
-  const { data: attempts, isLoading: attemptsLoading } = useStudentAttempts(studentId);
+export function StudentExamsClient() {
+  const profile = useDashboardProfile();
+  const { data: exams, isLoading: examsLoading } = useStudentExams(profile.id);
+  const { data: attempts, isLoading: attemptsLoading } = useStudentAttempts(profile.id);
 
   const examStates = useMemo(() => {
     const attemptsByExam = new Map<string, typeof attempts>();

@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDashboardProfile } from "@/components/providers/dashboard-profile-provider";
 import { useCourse } from "@/hooks/useCourses";
 import {
   getDocumentKindLabel,
@@ -32,7 +33,6 @@ import { useLessons } from "@/hooks/useLessons";
 import { useCourseProgress, useUpsertProgress } from "@/hooks/useLessonProgress";
 import { useStudentLiveSessions } from "@/hooks/useLiveSessions";
 import { useCourseCertificate } from "@/hooks/useCertificates";
-import { useCurrentProfile } from "@/hooks/useAuth";
 import {
   isExternalUrl,
   resolveDocumentFileUrl,
@@ -49,7 +49,7 @@ function getLiveSessionEndMs(session: { scheduled_start_at: string; duration_min
 export function LearnClient({ courseId, studentId }: { courseId: string; studentId: string }) {
   const supabase = useMemo(() => createClient(), []);
   const { data: course } = useCourse(courseId);
-  const { data: profile } = useCurrentProfile();
+  const profile = useDashboardProfile();
   const { data: lessons, isLoading: lessonsLoading } = useLessons(courseId);
   const { data: progress } = useCourseProgress(studentId, courseId);
   const { data: courseCertificate } = useCourseCertificate(studentId, courseId);
@@ -322,7 +322,7 @@ export function LearnClient({ courseId, studentId }: { courseId: string; student
                   width={courseCertificate.template?.width}
                   height={courseCertificate.template?.height}
                   data={{
-                    studentName: profile?.full_name ?? "Học viên",
+                    studentName: profile.full_name,
                     courseName: courseCertificate.course?.title ?? course?.title ?? "Khóa học",
                     issuedDate: formatDate(courseCertificate.issued_at),
                     certificateCode: courseCertificate.certificate_code ?? courseCertificate.cert_number,

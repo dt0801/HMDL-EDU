@@ -2,10 +2,12 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { StudentLiveSessionsList } from "@/components/live-sessions/student-live-sessions-list";
+import { useDashboardProfile } from "@/components/providers/dashboard-profile-provider";
 import { useStudentLiveSessions } from "@/hooks/useLiveSessions";
 
-export function StudentLiveSessionsClient({ studentId }: { studentId: string }) {
-  const { data: sessions = [], isLoading } = useStudentLiveSessions(studentId);
+export function StudentLiveSessionsClient() {
+  const profile = useDashboardProfile();
+  const { data: sessions = [], isLoading } = useStudentLiveSessions(profile.id);
 
   if (isLoading) {
     return (

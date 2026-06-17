@@ -5,16 +5,16 @@ import { Award } from "lucide-react";
 import { CertificateDownloadActions } from "@/components/certificates/certificate-download-actions";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
+import { useDashboardProfile } from "@/components/providers/dashboard-profile-provider";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCurrentProfile } from "@/hooks/useAuth";
 import { useMyCertificates } from "@/hooks/useCertificates";
 import { formatDate } from "@/lib/utils";
 
-export function CertificatesClient({ studentId }: { studentId: string }) {
-  const { data, isLoading } = useMyCertificates(studentId);
-  const { data: profile } = useCurrentProfile();
+export function CertificatesClient() {
+  const profile = useDashboardProfile();
+  const { data, isLoading } = useMyCertificates(profile.id);
 
   return (
     <>
@@ -66,7 +66,7 @@ export function CertificatesClient({ studentId }: { studentId: string }) {
                   width={c.template?.width}
                   height={c.template?.height}
                   data={{
-                    studentName: profile?.full_name ?? "Học viên",
+                    studentName: profile.full_name,
                     courseName: c.course?.title ?? "Khóa học",
                     issuedDate: formatDate(c.issued_at),
                     certificateCode: c.certificate_code ?? c.cert_number,
