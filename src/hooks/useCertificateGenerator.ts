@@ -42,10 +42,11 @@ export function useCertificateTemplates() {
   const supabase = createClient();
   return useQuery<CertificateTemplateWithCourse[]>({
     queryKey: ["certificate-templates"],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("certificate_templates")
-        .select("*, course:courses(id, title)")
+        .select("id, name, course_id, canvas_json, width, height, is_active, created_by, created_at, updated_at, course:courses(id, title)")
         .eq("is_active", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -87,4 +88,3 @@ export function useIssueCertificate() {
     },
   });
 }
-

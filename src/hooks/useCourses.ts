@@ -12,16 +12,31 @@ export type CourseWithInstructor = Course & {
   lessons_count?: number;
 };
 
+const COURSE_SELECT = `
+  id,
+  title,
+  description,
+  thumbnail_url,
+  category,
+  instructor_id,
+  is_published,
+  requires_enrollment,
+  created_at,
+  updated_at,
+  instructor:profiles!courses_instructor_id_fkey(id, full_name),
+  enrollments(count),
+  lessons(count)
+`;
+
 export function useCourses(opts?: { onlyMine?: boolean; instructorId?: string }) {
   const supabase = createClient();
   return useQuery<CourseWithInstructor[]>({
     queryKey: ["courses", opts],
+    staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       let q = supabase
         .from("courses")
-        .select(
-          "*, instructor:profiles!courses_instructor_id_fkey(id, full_name), enrollments(count), lessons(count)"
-        )
+        .select(COURSE_SELECT)
         .order("created_at", { ascending: false });
       if (opts?.instructorId) q = q.eq("instructor_id", opts.instructorId);
       const { data, error } = await q;
@@ -43,10 +58,13 @@ export function useCourse(id: string | undefined) {
   return useQuery<CourseWithInstructor | null>({
     queryKey: ["course", id],
     enabled: !!id,
+    staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("courses")
-        .select("*, instructor:profiles!courses_instructor_id_fkey(id, full_name)")
+        .select(
+          "id, title, description, thumbnail_url, category, instructor_id, is_published, requires_enrollment, created_at, updated_at, instructor:profiles!courses_instructor_id_fkey(id, full_name)"
+        )
         .eq("id", id!)
         .maybeSingle();
       if (error) throw error;

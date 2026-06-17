@@ -18,15 +18,19 @@ export type StudentExamListItem = Exam & {
 
 export type QuestionWithAnswers = Question & { answers: Answer[] };
 
+const EXAM_SELECT =
+  "id, course_id, title, description, duration_minutes, passing_score, max_attempts, is_published, start_at, end_at, created_at";
+
 export function useExamsByCourse(courseId: string | undefined) {
   const supabase = createClient();
   return useQuery<Exam[]>({
     queryKey: ["exams", "by-course", courseId],
     enabled: !!courseId,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("exams")
-        .select("*")
+        .select(EXAM_SELECT)
         .eq("course_id", courseId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -39,10 +43,11 @@ export function useAllExams() {
   const supabase = createClient();
   return useQuery<ExamWithCourse[]>({
     queryKey: ["exams"],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("exams")
-        .select("*, course:courses(id, title)")
+        .select(`${EXAM_SELECT}, course:courses(id, title)`)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as ExamWithCourse[];
@@ -55,10 +60,11 @@ export function useStudentExams(studentId: string | undefined) {
   return useQuery<StudentExamListItem[]>({
     queryKey: ["student-exams", studentId],
     enabled: !!studentId,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("exams")
-        .select("*, course:courses(id, title, category), questions(count)")
+        .select(`${EXAM_SELECT}, course:courses(id, title, category), questions(count)`)
         .eq("is_published", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -72,10 +78,11 @@ export function useExam(id: string | undefined) {
   return useQuery<ExamWithCourse | null>({
     queryKey: ["exam", id],
     enabled: !!id,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("exams")
-        .select("*, course:courses(id, title)")
+        .select(`${EXAM_SELECT}, course:courses(id, title)`)
         .eq("id", id!)
         .maybeSingle();
       if (error) throw error;
@@ -89,10 +96,11 @@ export function useExamQuestions(examId: string | undefined) {
   return useQuery<QuestionWithAnswers[]>({
     queryKey: ["exam-questions", examId],
     enabled: !!examId,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("questions")
-        .select("*, answers(*)")
+        .select("id, exam_id, content, type, points, sort_order, explanation, answers(id, question_id, content, is_correct, sort_order)")
         .eq("exam_id", examId!)
         .order("sort_order", { ascending: true });
       if (error) throw error;
@@ -238,10 +246,11 @@ export function useStudentAttempts(studentId: string | undefined, examId?: strin
   return useQuery<ExamAttempt[]>({
     queryKey: ["exam-attempts", studentId, examId],
     enabled: !!studentId,
+    staleTime: 60 * 1000,
     queryFn: async () => {
       let q = supabase
         .from("exam_attempts")
-        .select("*")
+        .select("id, student_id, exam_id, score, is_passed, started_at, submitted_at, answers_snapshot")
         .eq("student_id", studentId!)
         .order("started_at", { ascending: false });
       if (examId) q = q.eq("exam_id", examId);

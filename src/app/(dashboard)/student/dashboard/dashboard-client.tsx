@@ -73,10 +73,11 @@ export function StudentDashboardClient({ studentId }: { studentId: string }) {
   const { data: notifications, isLoading: notificationsLoading } = useQuery<Notification[]>({
     queryKey: ["my-notifications", studentId],
     enabled: !!studentId,
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("notifications")
-        .select("*")
+        .select("id, user_id, title, body, is_read, link, created_at")
         .eq("user_id", studentId)
         .order("created_at", { ascending: false })
         .limit(6);

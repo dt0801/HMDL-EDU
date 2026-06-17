@@ -17,6 +17,27 @@ export type CourseDocumentWithCourse = CourseDocument & {
   uploader: { id: string; full_name: string } | null;
 };
 
+const DOCUMENT_SELECT = `
+  id,
+  course_id,
+  lesson_id,
+  title,
+  description,
+  file_url,
+  file_name,
+  mime_type,
+  file_size_bytes,
+  audience,
+  is_published,
+  uploaded_by,
+  created_at,
+  updated_at,
+  document_kind,
+  course:courses(id, title, category),
+  lesson:lessons(id, title, sort_order),
+  uploader:profiles!course_documents_uploaded_by_fkey(id, full_name)
+`;
+
 export function useCourseDocuments(
   courseId: string | undefined,
   opts?: {
@@ -30,12 +51,11 @@ export function useCourseDocuments(
   return useQuery<CourseDocumentWithCourse[]>({
     queryKey: ["course-documents", courseId, opts],
     enabled: !!courseId,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       let query = supabase
         .from("course_documents")
-        .select(
-          "*, course:courses(id, title, category), lesson:lessons(id, title, sort_order), uploader:profiles!course_documents_uploaded_by_fkey(id, full_name)"
-        )
+        .select(DOCUMENT_SELECT)
         .eq("course_id", courseId!)
         .order("created_at", { ascending: false });
 
@@ -68,12 +88,11 @@ export function useInstructorDocuments(courseId?: string) {
   const supabase = createClient();
   return useQuery<CourseDocumentWithCourse[]>({
     queryKey: ["documents", "instructor", courseId],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       let query = supabase
         .from("course_documents")
-        .select(
-          "*, course:courses(id, title, category), lesson:lessons(id, title, sort_order), uploader:profiles!course_documents_uploaded_by_fkey(id, full_name)"
-        )
+        .select(DOCUMENT_SELECT)
         .order("created_at", { ascending: false });
 
       if (courseId) query = query.eq("course_id", courseId);
@@ -90,12 +109,11 @@ export function useStudentDocuments(studentId: string | undefined) {
   return useQuery<CourseDocumentWithCourse[]>({
     queryKey: ["documents", "student", studentId],
     enabled: !!studentId,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("course_documents")
-        .select(
-          "*, course:courses(id, title, category), lesson:lessons(id, title, sort_order), uploader:profiles!course_documents_uploaded_by_fkey(id, full_name)"
-        )
+        .select(DOCUMENT_SELECT)
         .eq("is_published", true)
         .in("audience", ["student", "both"])
         .order("created_at", { ascending: false });

@@ -41,7 +41,20 @@ async function apiRequest<T>(input: RequestInfo, init?: RequestInit) {
 
 function buildLiveSessionSelect() {
   return [
-    "*",
+    "id",
+    "course_id",
+    "lesson_id",
+    "title",
+    "description",
+    "scheduled_start_at",
+    "duration_minutes",
+    "timezone",
+    "zoom_meeting_id",
+    "zoom_join_url",
+    "status",
+    "created_by",
+    "created_at",
+    "updated_at",
     "course:courses(id, title, category)",
     "lesson:lessons(id, title, sort_order)",
     "creator:profiles!live_sessions_created_by_fkey(id, full_name)",
@@ -56,6 +69,7 @@ export function useLiveSessions(
 
   return useQuery<LiveSessionWithDetails[]>({
     queryKey: ["live-sessions", "instructor", courseId, opts],
+    staleTime: 60 * 1000,
     queryFn: async () => {
       let query = supabase
         .from("live_sessions")
@@ -82,6 +96,7 @@ export function useStudentLiveSessions(
   return useQuery<LiveSessionWithDetails[]>({
     queryKey: ["live-sessions", "student", studentId, opts],
     enabled: !!studentId,
+    staleTime: 60 * 1000,
     queryFn: async () => {
       let query = supabase
         .from("live_sessions")

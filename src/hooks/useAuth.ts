@@ -10,6 +10,7 @@ export function useCurrentProfile() {
 
   return useQuery<Profile | null>({
     queryKey: ["current-profile"],
+    staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       const {
         data: { user },
@@ -18,7 +19,9 @@ export function useCurrentProfile() {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select(
+          "id, full_name, email, role, department, department_id, avatar_url, phone, profile_completed_at, is_active, created_at"
+        )
         .eq("id", user.id)
         .maybeSingle();
 

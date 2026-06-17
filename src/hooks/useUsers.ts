@@ -10,12 +10,23 @@ export function useUsers() {
   const supabase = createClient();
   return useQuery<ProfileWithDepartmentEmbed[]>({
     queryKey: ["users"],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
         .select(
           `
-          *,
+          id,
+          full_name,
+          email,
+          role,
+          department,
+          department_id,
+          avatar_url,
+          phone,
+          profile_completed_at,
+          is_active,
+          created_at,
           departments (
             id,
             name

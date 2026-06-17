@@ -6,15 +6,19 @@ import { createClient } from "@/lib/supabase/client";
 import type { LessonInput } from "@/lib/validations/lesson.schema";
 import type { Lesson } from "@/types/database.types";
 
+const LESSON_SELECT =
+  "id, course_id, title, description, type, content_url, duration_seconds, sort_order, is_published, created_at";
+
 export function useLessons(courseId: string | undefined) {
   const supabase = createClient();
   return useQuery<Lesson[]>({
     queryKey: ["lessons", courseId],
     enabled: !!courseId,
+    staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("lessons")
-        .select("*")
+        .select(LESSON_SELECT)
         .eq("course_id", courseId!)
         .order("sort_order", { ascending: true });
       if (error) throw error;

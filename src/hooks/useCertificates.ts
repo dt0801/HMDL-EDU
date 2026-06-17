@@ -26,6 +26,7 @@ export function useMyCertificates(studentId: string | undefined) {
   return useQuery<CertificateWithCourse[]>({
     queryKey: ["my-certificates", studentId],
     enabled: !!studentId,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("certificates")
@@ -43,6 +44,7 @@ export function useCourseCertificate(studentId: string | undefined, courseId: st
   return useQuery<CertificateWithCourse | null>({
     queryKey: ["my-certificate", studentId, courseId],
     enabled: !!studentId && !!courseId,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("certificates")
@@ -61,6 +63,7 @@ export function useInstructorCertificates(instructorId: string | undefined) {
   return useQuery<CertificateWithCourseAndStudent[]>({
     queryKey: ["instructor-certificates", instructorId],
     enabled: !!instructorId,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       // RLS allows instructors to see certificates for their courses.
       const { data, error } = await supabase

@@ -23,10 +23,13 @@ export function useMyEnrollments(studentId: string | undefined) {
   return useQuery<EnrollmentWithCourse[]>({
     queryKey: ["my-enrollments", studentId],
     enabled: !!studentId,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("enrollments")
-        .select("*, course:courses(id, title, thumbnail_url, category)")
+        .select(
+          "id, student_id, course_id, enrolled_at, completed_at, status, course:courses(id, title, thumbnail_url, category)"
+        )
         .eq("student_id", studentId!)
         .order("enrolled_at", { ascending: false });
       if (error) throw error;
@@ -40,10 +43,13 @@ export function useCourseEnrollments(courseId: string | undefined) {
   return useQuery<EnrollmentWithStudent[]>({
     queryKey: ["course-enrollments", courseId],
     enabled: !!courseId,
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("enrollments")
-        .select("*, student:profiles!enrollments_student_id_fkey(id, full_name, email, department)")
+        .select(
+          "id, student_id, course_id, enrolled_at, completed_at, status, student:profiles!enrollments_student_id_fkey(id, full_name, email, department)"
+        )
         .eq("course_id", courseId!)
         .order("enrolled_at", { ascending: false });
       if (error) throw error;

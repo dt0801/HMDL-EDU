@@ -30,10 +30,11 @@ export function useAdminCertificates() {
   const supabase = createClient();
   return useQuery<CertificateWithRefs[]>({
     queryKey: ["admin", "certificates"],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("certificates")
-        .select("*, student:profiles(id, full_name, email, department), course:courses(id, title, category), template:certificate_templates(id, name, canvas_json, width, height)")
+        .select("id, student_id, course_id, issued_at, cert_number, template_id, certificate_code, pdf_url, image_url, revoked_at, revoked_reason, student:profiles(id, full_name, email, department), course:courses(id, title, category), template:certificate_templates(id, name, canvas_json, width, height)")
         .order("issued_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as CertificateWithRefs[];
@@ -45,10 +46,11 @@ export function useAdminNotifications() {
   const supabase = createClient();
   return useQuery<NotificationWithUser[]>({
     queryKey: ["admin", "notifications"],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("notifications")
-        .select("*, user:profiles(id, full_name, email, role)")
+        .select("id, user_id, title, body, is_read, link, created_at, user:profiles(id, full_name, email, role)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as NotificationWithUser[];
@@ -60,10 +62,11 @@ export function useAdminEnrollments() {
   const supabase = createClient();
   return useQuery<EnrollmentWithRefs[]>({
     queryKey: ["admin", "enrollments"],
+    staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("enrollments")
-        .select("*, student:profiles(id, full_name, email, department), course:courses(id, title, category)")
+        .select("id, student_id, course_id, status, enrolled_at, completed_at, student:profiles(id, full_name, email, department), course:courses(id, title, category)")
         .order("enrolled_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as EnrollmentWithRefs[];

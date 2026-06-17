@@ -16,6 +16,7 @@ export function useCourseProgress(studentId: string | undefined, courseId: strin
   return useQuery<LessonProgress[]>({
     queryKey: ["lesson-progress", studentId, courseId],
     enabled: !!studentId && !!courseId,
+    staleTime: 60 * 1000,
     queryFn: async () => {
       const { data: lessons, error: e1 } = await supabase
         .from("lessons")
@@ -26,7 +27,7 @@ export function useCourseProgress(studentId: string | undefined, courseId: strin
       if (ids.length === 0) return [];
       const { data, error } = await supabase
         .from("lesson_progress")
-        .select("*")
+        .select("id, student_id, lesson_id, watched_seconds, is_completed, last_watched_at")
         .eq("student_id", studentId!)
         .in("lesson_id", ids);
       if (error) throw error;
@@ -45,6 +46,7 @@ export function useCourseProgressSummaries(
   return useQuery<Record<string, CourseProgressSummary>>({
     queryKey: ["course-progress-summaries", studentId, normalizedCourseIds],
     enabled: !!studentId && normalizedCourseIds.length > 0,
+    staleTime: 60 * 1000,
     queryFn: async () => {
       const summaries = Object.fromEntries(
         normalizedCourseIds.map((courseId) => [
@@ -128,6 +130,9 @@ export function useUpsertProgress() {
         );
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["lesson-progress"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["lesson-progress"] });
+      qc.invalidateQueries({ queryKey: ["course-progress-summaries"] });
+    },
   });
 }
